@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Bookmark, Sparkles, ChevronRight } from "lucide-react";
+import { Users, Bookmark, Sparkles, ChevronRight, Banknote } from "lucide-react";
 
 const modules = [
   {
@@ -26,6 +26,14 @@ const modules = [
     title: "Kampanya İşlemleri",
     description: "Aktif kampanyaları yönetin, yeni teklifler oluşturun ve performans analizi yapın.",
     buttonLabel: "Daha Fazla Bilgi",
+  },
+  {
+    id: "tahsilat-islemleri",
+    icon: <Banknote className="w-7 h-7 text-orange-600" />,
+    iconBg: "bg-orange-50",
+    title: "Tahsilat İşlemleri",
+    description: "Üye tahsilatlarını takip edin, bekleyen ödemeleri görüntüleyin ve tahsilat işlemlerini yönetin.",
+    buttonLabel: "İşlemlere Git",
   },
 ];
 
