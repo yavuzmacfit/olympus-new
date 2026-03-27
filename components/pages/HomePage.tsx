@@ -1,22 +1,22 @@
 "use client";
 
-import { Users, Bookmark, Sparkles, ChevronRight, Banknote } from "lucide-react";
+import { Users, Bookmark, Sparkles, ChevronRight, Banknote, Building2 } from "lucide-react";
 
 const modules = [
   {
     id: "aday-uye",
     icon: <Users className="w-7 h-7 text-blue-600" />,
     iconBg: "bg-blue-50",
-    title: "Aday Üye",
+    title: "Satış İşlemleri",
     description: "Aday üyelerinizi yönetin, listeleri takip edin ve üyelik süreçlerini hızlandırın.",
-    buttonLabel: "Görüntüle",
+    buttonLabel: "İşlemlere Git",
   },
   {
-    id: "uyelik-islemleri",
-    icon: <Bookmark className="w-7 h-7 text-emerald-600" />,
-    iconBg: "bg-emerald-50",
-    title: "Üyelik İşlemleri",
-    description: "Mevcut üyelerin işlemlerini gerçekleştirin, sözleşmeleri ve ödemeleri takip edin.",
+    id: "kulup-islemleri",
+    icon: <Building2 className="w-7 h-7 text-rose-600" />,
+    iconBg: "bg-rose-50",
+    title: "Kulüp İşlemleri",
+    description: "Kulüp bilgilerini yönetin, personel işlemlerini gerçekleştirin ve kulüp ayarlarını düzenleyin.",
     buttonLabel: "İşlemlere Git",
   },
   {
@@ -25,7 +25,7 @@ const modules = [
     iconBg: "bg-purple-50",
     title: "Kampanya İşlemleri",
     description: "Aktif kampanyaları yönetin, yeni teklifler oluşturun ve performans analizi yapın.",
-    buttonLabel: "Daha Fazla Bilgi",
+    buttonLabel: "İşlemlere Git",
   },
   {
     id: "tahsilat-islemleri",
@@ -33,6 +33,14 @@ const modules = [
     iconBg: "bg-orange-50",
     title: "Tahsilat İşlemleri",
     description: "Üye tahsilatlarını takip edin, bekleyen ödemeleri görüntüleyin ve tahsilat işlemlerini yönetin.",
+    buttonLabel: "İşlemlere Git",
+  },
+  {
+    id: "uyelik-islemleri",
+    icon: <Bookmark className="w-7 h-7 text-emerald-600" />,
+    iconBg: "bg-emerald-50",
+    title: "Üyelik İşlemleri",
+    description: "Mevcut üyelerin işlemlerini gerçekleştirin, sözleşmeleri ve ödemeleri takip edin.",
     buttonLabel: "İşlemlere Git",
   },
 ];
@@ -44,8 +52,8 @@ interface HomePageProps {
 export default function HomePage({ onOpenModule }: HomePageProps) {
   return (
     <div className="flex-1 py-10 px-16 bg-[#f5f8fa]">
-      <h1 className="text-3xl font-bold text-slate-900 mb-8">Modules</h1>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl">
+      <h1 className="text-3xl font-bold text-slate-900 mb-8">Modüller</h1>
+      <div className="grid gap-8" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
         {modules.map((mod) => (
           <div
             key={mod.id}
@@ -58,7 +66,7 @@ export default function HomePage({ onOpenModule }: HomePageProps) {
             <p className="text-xs text-slate-400 leading-relaxed mb-6">{mod.description}</p>
             <button
               onClick={() => onOpenModule(mod.id)}
-              className="w-full border border-slate-300 rounded-lg py-2.5 flex items-center justify-center gap-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors mt-auto cursor-pointer font-medium"
+              className="w-full bg-[#CD3638] hover:bg-[#b82e30] rounded-lg py-2.5 flex items-center justify-center gap-2 text-xs text-white transition-colors mt-auto cursor-pointer font-medium"
             >
               <ChevronRight className="w-3.5 h-3.5" />
               {mod.buttonLabel}

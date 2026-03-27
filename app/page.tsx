@@ -1,21 +1,23 @@
 "use client";
 
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles, Banknote } from "lucide-react";
+import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles, Banknote, Building2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HomePageContent from "@/components/pages/HomePage";
 import AdayUyePage from "@/components/pages/AdayUyePage";
 import UyelikIslemleriPage from "@/components/pages/UyelikIslemleriPage";
 import KampanyaIslemleriPage from "@/components/pages/KampanyaIslemleriPage";
 import TahsilatIslemleriPage from "@/components/pages/TahsilatIslemleriPage";
+import KulupIslemleriPage from "@/components/pages/KulupIslemleriPage";
 
 interface Tab { id: string; title: string; icon: React.ElementType; }
 
 const MODULE_CONFIG: Record<string, { title: string; icon: React.ElementType }> = {
-  "aday-uye":            { title: "Aday Üye",            icon: Users    },
+  "aday-uye":            { title: "Satış İşlemleri",      icon: Users    },
   "uyelik-islemleri":    { title: "Üyelik İşlemleri",    icon: Bookmark },
   "kampanya-islemleri":  { title: "Kampanya İşlemleri",  icon: Sparkles },
-  "tahsilat-islemleri":  { title: "Tahsilat İşlemleri",  icon: Banknote },
+  "tahsilat-islemleri":  { title: "Tahsilat İşlemleri",  icon: Banknote  },
+  "kulup-islemleri":     { title: "Kulüp İşlemleri",     icon: Building2 },
 };
 
 // Concave corners live INSIDE each tab button so they move with it during drag.
@@ -367,6 +369,7 @@ export default function Page() {
                   {tab.id === "uyelik-islemleri"   && <UyelikIslemleriPage />}
                   {tab.id === "kampanya-islemleri" && <KampanyaIslemleriPage />}
                   {tab.id === "tahsilat-islemleri" && <TahsilatIslemleriPage />}
+                  {tab.id === "kulup-islemleri"    && <KulupIslemleriPage />}
                 </div>
               ))}
             </div>
