@@ -60,6 +60,7 @@ export default function Page() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeView, setActiveView] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [clubMenuOpen, setClubMenuOpen] = useState(false);
 
   // Drag state — use refs to avoid stale closures in pointer handlers
   const [dragState, setDragStateRaw] = useState<{
@@ -343,10 +344,26 @@ export default function Page() {
         <div className="flex items-center gap-4 pr-4 text-white/80">
           <button className="hover:text-white transition-colors"><Phone className="w-4 h-4" /></button>
           <button className="hover:text-white transition-colors"><Bell className="w-4 h-4" /></button>
-          <div className="flex items-center gap-2 cursor-pointer border-l border-white/20 pl-3">
-            <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-white text-[10px] font-bold">MA</div>
-            <span className="text-xs text-white/80">Mars Athletic Club</span>
-            <ChevronDown className="w-3.5 h-3.5 text-white/60" />
+          <div className="relative border-l border-white/20 pl-3">
+            <button
+              onClick={() => setClubMenuOpen(prev => !prev)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-white text-[10px] font-bold">MA</div>
+              <span className="text-xs text-white/80">Mars Athletic Club</span>
+              <ChevronDown className="w-3.5 h-3.5 text-white/60" />
+            </button>
+            {clubMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-[#171a1d] rounded-lg shadow-lg border border-white/10 py-1 z-50">
+                <button className="w-full text-left px-4 py-2 text-xs text-white/70 hover:bg-white/5 hover:text-white transition-colors">
+                  Kullanıcı Yönetimi
+                </button>
+                <div className="mx-3 h-px bg-white/10 my-1" />
+                <button className="w-full text-left px-4 py-2 text-xs text-white/70 hover:bg-white/5 hover:text-white transition-colors">
+                  Çıkış Yap
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
