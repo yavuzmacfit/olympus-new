@@ -135,6 +135,8 @@ export default function Sidebar({ activeModuleId, collapsed, onCollapse }: Sideb
               {collapsed && isHovered && (
                 children ? (
                   <div className="absolute left-full top-0 ml-1 z-50 bg-[#171a1d] border border-white/10 rounded-xl shadow-2xl py-3 min-w-[200px]">
+                    {/* Transparent bridge covering the ml-1 gap so mouse movement doesn't trigger onMouseLeave */}
+                    <div className="absolute -left-1 top-0 w-1 h-full" />
                     <p className="px-4 pb-2 text-[10px] font-bold text-white/40 uppercase tracking-wider">
                       {label}
                     </p>
