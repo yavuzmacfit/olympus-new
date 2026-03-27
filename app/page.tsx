@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles, Banknote, Building2 } from "lucide-react";
+import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HomePageContent from "@/components/pages/HomePage";
 import AdayUyePage from "@/components/pages/AdayUyePage";
@@ -9,6 +9,7 @@ import UyelikIslemleriPage from "@/components/pages/UyelikIslemleriPage";
 import KampanyaIslemleriPage from "@/components/pages/KampanyaIslemleriPage";
 import TahsilatIslemleriPage from "@/components/pages/TahsilatIslemleriPage";
 import KulupIslemleriPage from "@/components/pages/KulupIslemleriPage";
+import AktiviteIslemleriPage from "@/components/pages/AktiviteIslemleriPage";
 
 interface Tab { id: string; title: string; icon: React.ElementType; }
 
@@ -18,6 +19,7 @@ const MODULE_CONFIG: Record<string, { title: string; icon: React.ElementType }> 
   "kampanya-islemleri":  { title: "Kampanya İşlemleri",  icon: Sparkles },
   "tahsilat-islemleri":  { title: "Tahsilat İşlemleri",  icon: Banknote  },
   "kulup-islemleri":     { title: "Kulüp İşlemleri",     icon: Building2 },
+  "aktivite-islemleri":  { title: "Aktivite İşlemleri",  icon: Dumbbell  },
 };
 
 // Concave corners live INSIDE each tab button so they move with it during drag.
@@ -387,6 +389,7 @@ export default function Page() {
                   {tab.id === "kampanya-islemleri" && <KampanyaIslemleriPage />}
                   {tab.id === "tahsilat-islemleri" && <TahsilatIslemleriPage />}
                   {tab.id === "kulup-islemleri"    && <KulupIslemleriPage />}
+                  {tab.id === "aktivite-islemleri" && <AktiviteIslemleriPage />}
                 </div>
               ))}
             </div>

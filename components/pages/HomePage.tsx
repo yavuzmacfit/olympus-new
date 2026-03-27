@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Bookmark, Sparkles, Banknote, Building2 } from "lucide-react";
+import { Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell } from "lucide-react";
 
 const modules = [
   {
@@ -41,6 +41,14 @@ const modules = [
     iconBg: "bg-purple-50",
     title: "Kampanya İşlemleri",
     description: "Aktif kampanyaları yönetin, yeni teklifler oluşturun ve performans analizi yapın.",
+    buttonLabel: "İŞLEMLERE GİT",
+  },
+  {
+    id: "aktivite-islemleri",
+    icon: <Dumbbell className="w-7 h-7 text-teal-600" />,
+    iconBg: "bg-teal-50",
+    title: "Aktivite İşlemleri",
+    description: "Kulüp aktivitelerini yönetin, ders programlarını oluşturun ve katılımları takip edin.",
     buttonLabel: "İŞLEMLERE GİT",
   },
 ];
