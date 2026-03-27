@@ -51,7 +51,7 @@ interface HomePageProps {
 
 export default function HomePage({ onOpenModule }: HomePageProps) {
   return (
-    <div className="flex-1 py-10 px-16 bg-[#f5f8fa] overflow-y-auto">
+    <div className="flex-1 py-10 px-16 bg-[#f5f8fa] overflow-y-auto flex flex-col">
       <h1 className="text-3xl font-bold text-slate-900 mb-8" style={{ fontFamily: "var(--font-barlow-condensed)" }}>Hoş Geldin, Mars Athletic Club 👋</h1>
       <div className="grid gap-8" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
         {modules.map((mod) => (
@@ -73,6 +73,11 @@ export default function HomePage({ onOpenModule }: HomePageProps) {
           </div>
         ))}
       </div>
+      <footer className="mt-auto pt-10">
+        <div className="border-t border-slate-200 py-4">
+          <p className="text-xs text-slate-400">© 2026 MACFit. Tüm hakları saklıdır.</p>
+        </div>
+      </footer>
     </div>
   );
 }
