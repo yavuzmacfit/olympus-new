@@ -20,11 +20,11 @@ const modules = [
     buttonLabel: "İŞLEMLERE GİT",
   },
   {
-    id: "kampanya-islemleri",
-    icon: <Sparkles className="w-7 h-7 text-purple-600" />,
-    iconBg: "bg-purple-50",
-    title: "Kampanya İşlemleri",
-    description: "Aktif kampanyaları yönetin, yeni teklifler oluşturun ve performans analizi yapın.",
+    id: "uyelik-islemleri",
+    icon: <Bookmark className="w-7 h-7 text-emerald-600" />,
+    iconBg: "bg-emerald-50",
+    title: "Üyelik İşlemleri",
+    description: "Mevcut üyelerin işlemlerini gerçekleştirin, sözleşmeleri ve ödemeleri takip edin.",
     buttonLabel: "İŞLEMLERE GİT",
   },
   {
@@ -36,11 +36,11 @@ const modules = [
     buttonLabel: "İŞLEMLERE GİT",
   },
   {
-    id: "uyelik-islemleri",
-    icon: <Bookmark className="w-7 h-7 text-emerald-600" />,
-    iconBg: "bg-emerald-50",
-    title: "Üyelik İşlemleri",
-    description: "Mevcut üyelerin işlemlerini gerçekleştirin, sözleşmeleri ve ödemeleri takip edin.",
+    id: "kampanya-islemleri",
+    icon: <Sparkles className="w-7 h-7 text-purple-600" />,
+    iconBg: "bg-purple-50",
+    title: "Kampanya İşlemleri",
+    description: "Aktif kampanyaları yönetin, yeni teklifler oluşturun ve performans analizi yapın.",
     buttonLabel: "İŞLEMLERE GİT",
   },
 ];
