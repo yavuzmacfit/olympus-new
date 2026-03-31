@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell } from "lucide-react";
+import { Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell, ChevronRight } from "lucide-react";
 
 const modules = [
   {
