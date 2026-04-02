@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Phone, Search, ChevronDown, Plus, MoreHorizontal, Columns2,
   Filter, ArrowUpDown, Download, Save, X, FileText,
@@ -110,8 +110,74 @@ const SNAP_RATIO          = 0.50; // snap to full when panel >= 50% of container
 export default function AdayUyePage() {
   const [activeTab, setActiveTab]         = useState("all");
   const [selectedLead, setSelectedLead]   = useState<Lead | null>(null);
+  const [showAddForm, setShowAddForm]     = useState(false);
   const [visibleCols, setVisibleCols]     = useState<Set<ColId>>(new Set(DEFAULT_VISIBLE));
   const [showColPicker, setShowColPicker] = useState(false);
+
+  // Add form state
+  const [formData, setFormData] = useState({
+    ad: "", soyad: "", ulkeKodu: "90", telefon: "",
+    eposta: "", cinsiyet: "", dogumTarihi: "", ulke: "Turkey", kaynak: "",
+  });
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
+  // OTP modal state
+  const [showOtpModal, setShowOtpModal]   = useState(false);
+  const [otpValues, setOtpValues]         = useState(["", "", "", ""]);
+  const [otpCountdown, setOtpCountdown]   = useState(180);
+  const otpInputRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+  const openAddForm = () => {
+    setSelectedLead(null);
+    setFormData({ ad: "", soyad: "", ulkeKodu: "90", telefon: "", eposta: "", cinsiyet: "", dogumTarihi: "", ulke: "Turkey", kaynak: "" });
+    setFormErrors({});
+    setShowAddForm(true);
+  };
+
+  const closeAddForm = () => {
+    setShowAddForm(false);
+    setIsExpanded(false);
+    setPanelWidth(DEFAULT_PANEL_WIDTH);
+  };
+
+  const handleFormSubmit = () => {
+    const errors: Record<string, string> = {};
+    if (!formData.ad.trim())      errors.ad      = "Ad zorunludur";
+    if (!formData.soyad.trim())   errors.soyad   = "Soyad zorunludur";
+    if (!formData.telefon.trim()) errors.telefon = "Telefon zorunludur";
+    if (!formData.kaynak)         errors.kaynak  = "Kaynak bilgisi zorunludur";
+    if (Object.keys(errors).length) { setFormErrors(errors); return; }
+
+    // Show OTP verification modal
+    setOtpValues(["", "", "", ""]);
+    setOtpCountdown(180);
+    setShowOtpModal(true);
+  };
+
+  const handleOtpConfirm = () => {
+    // Add to leads list (mock — replace with API call + OTP verification later)
+    const initials = (formData.ad[0] ?? "") + (formData.soyad[0] ?? "");
+    const colors = ["bg-red-700", "bg-blue-700", "bg-emerald-700", "bg-purple-700", "bg-orange-700"];
+    const newLead: Lead = {
+      id: leads.length + 1,
+      initials: initials.toUpperCase(),
+      color: colors[leads.length % colors.length],
+      ad: formData.ad, soyad: formData.soyad,
+      telefon: `+${formData.ulkeKodu} ${formData.telefon}`,
+      eposta: formData.eposta || "—",
+      kulupad: "Mars Athletic", satisTemsilcisi: "—",
+      olusturmaTarihi: new Date().toLocaleDateString("tr-TR"),
+      kaynak: formData.kaynak, kaynakDetay: "—",
+      statu: "Yeni Lead", gorevTarihi: "—",
+      ayrUyelikTipi: "—", ayrUyelikSuresi: "—",
+      isBankasiKKTipi: "—",
+      iletisimIzni: "—", smsOnay: "—",
+    };
+    leads.push(newLead);
+    setShowOtpModal(false);
+    setShowAddForm(false);
+    setSelectedLead(newLead);
+  };
 
   // Panel resize state
   const [panelWidth, setPanelWidth]         = useState(DEFAULT_PANEL_WIDTH);
@@ -123,6 +189,13 @@ export default function AdayUyePage() {
   const resizeDragging  = useRef(false);
   const resizeStartX    = useRef(0);
   const resizeStartWidth = useRef(DEFAULT_PANEL_WIDTH);
+
+  // OTP countdown timer
+  useEffect(() => {
+    if (!showOtpModal || otpCountdown <= 0) return;
+    const t = setTimeout(() => setOtpCountdown(v => v - 1), 1000);
+    return () => clearTimeout(t);
+  }, [showOtpModal, otpCountdown]);
 
   const toggleCol = (id: ColId) => {
     setVisibleCols(prev => {
@@ -239,7 +312,7 @@ export default function AdayUyePage() {
             </div>
             <div className="flex items-center gap-2">
               <button className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-600 rounded hover:bg-slate-100"><MoreHorizontal className="w-4 h-4" /></button>
-              <button className="flex items-center gap-1.5 bg-[#df1d2f] hover:bg-[#b91827] text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors">
+              <button onClick={openAddForm} className="flex items-center gap-1.5 bg-[#df1d2f] hover:bg-[#b91827] text-white px-4 py-1.5 rounded-lg text-xs font-bold transition-colors">
                 Lead Ekle <ChevronDown className="w-3 h-3" />
               </button>
             </div>
@@ -351,7 +424,7 @@ export default function AdayUyePage() {
         </div>
 
         {/* ── Right panel ── */}
-        {selectedLead && (
+        {(selectedLead || showAddForm) && (
           <div
             ref={panelRef}
             style={{
@@ -375,119 +448,343 @@ export default function AdayUyePage() {
               className="absolute left-0 top-0 w-1.5 h-full z-20 cursor-col-resize"
             />
 
-            {/* Header */}
-            <div className={`flex items-center justify-between border-b border-slate-200 shrink-0 ${isLarge ? "px-6 py-4" : "px-4 py-3"}`}>
-              <div className="flex items-center gap-3 min-w-0">
-                <div className={`${isLarge ? "w-12 h-12 text-sm" : "w-8 h-8 text-xs"} ${selectedLead.color} rounded-lg flex items-center justify-center text-white font-bold shrink-0`}>
-                  {selectedLead.initials}
+            {showAddForm ? (
+              /* ── Add Lead Form ── */
+              <>
+                <div className="flex items-center justify-between px-4 py-3 border-b border-slate-200 shrink-0">
+                  <div className="flex items-center gap-2">
+                    {isExpanded ? (
+                      <button onClick={collapsePanel} title="Küçült"
+                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
+                        <PanelLeftClose className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button onClick={() => { setSnapTransition(true); setIsExpanded(true); setTimeout(() => setSnapTransition(false), 250); }} title="Genişlet"
+                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">Aday Üye Ekle</h2>
+                  </div>
+                  <button onClick={closeAddForm} className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-                <div className="min-w-0">
-                  <p className={`font-bold text-slate-900 truncate ${isLarge ? "text-base" : "text-sm"}`}>
-                    {selectedLead.ad} {selectedLead.soyad}
-                  </p>
-                  {isLarge && (
-                    <p className="text-xs text-slate-400 mt-0.5">{selectedLead.telefon} · {selectedLead.eposta}</p>
+
+                <div className="flex-1 overflow-auto px-4 py-4 space-y-4">
+                  {/* Ad / Soyad */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-slate-600 mb-1 block">Ad <span className="text-[#df1d2f]">*</span></label>
+                      <input value={formData.ad} onChange={e => setFormData(p => ({ ...p, ad: e.target.value }))}
+                        placeholder="Ad"
+                        className={`w-full border rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-[#df1d2f]/40 ${formErrors.ad ? "border-[#df1d2f]" : "border-slate-300"}`} />
+                      {formErrors.ad && <p className="text-[10px] text-[#df1d2f] mt-0.5">{formErrors.ad}</p>}
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-slate-600 mb-1 block">Soyad <span className="text-[#df1d2f]">*</span></label>
+                      <input value={formData.soyad} onChange={e => setFormData(p => ({ ...p, soyad: e.target.value }))}
+                        placeholder="Soyad"
+                        className={`w-full border rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-[#df1d2f]/40 ${formErrors.soyad ? "border-[#df1d2f]" : "border-slate-300"}`} />
+                      {formErrors.soyad && <p className="text-[10px] text-[#df1d2f] mt-0.5">{formErrors.soyad}</p>}
+                    </div>
+                  </div>
+
+                  {/* Ülke Kodu / Telefon */}
+                  <div className="grid grid-cols-[100px_1fr] gap-3">
+                    <div>
+                      <label className="text-[10px] font-semibold text-slate-600 mb-1 block">Ülke Kodu <span className="text-[#df1d2f]">*</span></label>
+                      <div className="flex items-center border border-slate-300 rounded-lg px-3 py-2 gap-1">
+                        <input value={formData.ulkeKodu} onChange={e => setFormData(p => ({ ...p, ulkeKodu: e.target.value }))}
+                          className="w-full text-xs outline-none" />
+                        <button onClick={() => setFormData(p => ({ ...p, ulkeKodu: "" }))} className="text-slate-400 hover:text-slate-600"><X className="w-3 h-3" /></button>
+                        <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-semibold text-slate-600 mb-1 block">Telefon <span className="text-[#df1d2f]">*</span></label>
+                      <input value={formData.telefon} onChange={e => setFormData(p => ({ ...p, telefon: e.target.value }))}
+                        placeholder="(5xx) xxx-xxxx"
+                        className={`w-full border rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-[#df1d2f]/40 ${formErrors.telefon ? "border-[#df1d2f]" : "border-slate-300"}`} />
+                      {formErrors.telefon && <p className="text-[10px] text-[#df1d2f] mt-0.5">{formErrors.telefon}</p>}
+                    </div>
+                  </div>
+
+                  {/* E-posta */}
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600 mb-1 block">E-posta</label>
+                    <input value={formData.eposta} onChange={e => setFormData(p => ({ ...p, eposta: e.target.value }))}
+                      placeholder="E-posta"
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-[#df1d2f]/40" />
+                  </div>
+
+                  {/* Cinsiyet */}
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600 mb-2 block">Cinsiyet</label>
+                    <div className="flex items-center gap-4">
+                      {["Kadın", "Erkek"].map(c => (
+                        <label key={c} className="flex items-center gap-2 cursor-pointer text-xs text-slate-700">
+                          <input type="radio" name="cinsiyet" value={c}
+                            checked={formData.cinsiyet === c}
+                            onChange={() => setFormData(p => ({ ...p, cinsiyet: c }))}
+                            className="accent-[#df1d2f]" />
+                          {c}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Doğum Tarihi */}
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600 mb-1 block">Doğum Tarihi</label>
+                    <input type="date" value={formData.dogumTarihi} onChange={e => setFormData(p => ({ ...p, dogumTarihi: e.target.value }))}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-[#df1d2f]/40" />
+                  </div>
+
+                  {/* Ülke */}
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600 mb-1 block">Ülke</label>
+                    <input value={formData.ulke} onChange={e => setFormData(p => ({ ...p, ulke: e.target.value }))}
+                      className="w-full border border-slate-300 rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-[#df1d2f]/40" />
+                  </div>
+
+                  {/* Kaynak */}
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600 mb-1 block">Kaynak Bilgileri <span className="text-[#df1d2f]">*</span></label>
+                    <select value={formData.kaynak} onChange={e => setFormData(p => ({ ...p, kaynak: e.target.value }))}
+                      className={`w-full border rounded-lg px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-[#df1d2f]/40 bg-white ${formErrors.kaynak ? "border-[#df1d2f]" : "border-slate-300"}`}>
+                      <option value="">Seç</option>
+                      {["Instagram", "TikTok", "Google", "Web Sitesi", "Referans", "Diğer"].map(k => (
+                        <option key={k} value={k}>{k}</option>
+                      ))}
+                    </select>
+                    {formErrors.kaynak && <p className="text-[10px] text-[#df1d2f] mt-0.5">{formErrors.kaynak}</p>}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-end gap-2 px-4 py-3 border-t border-slate-200 shrink-0">
+                  <button onClick={closeAddForm} className="px-4 py-2 text-xs text-slate-600 hover:text-slate-900 font-medium transition-colors">
+                    Çık
+                  </button>
+                  <button onClick={handleFormSubmit} className="px-5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors">
+                    Devam Et
+                  </button>
+                </div>
+              </>
+            ) : selectedLead ? (
+              /* ── Lead Detail ── */
+              <>
+                {/* Header */}
+                <div className={`flex items-center justify-between border-b border-slate-200 shrink-0 ${isLarge ? "px-6 py-4" : "px-4 py-3"}`}>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className={`${isLarge ? "w-12 h-12 text-sm" : "w-8 h-8 text-xs"} ${selectedLead.color} rounded-lg flex items-center justify-center text-white font-bold shrink-0`}>
+                      {selectedLead.initials}
+                    </div>
+                    <div className="min-w-0">
+                      <p className={`font-bold text-slate-900 truncate ${isLarge ? "text-base" : "text-sm"}`}>
+                        {selectedLead.ad} {selectedLead.soyad}
+                      </p>
+                      {isLarge && (
+                        <p className="text-xs text-slate-400 mt-0.5">{selectedLead.telefon} · {selectedLead.eposta}</p>
+                      )}
+                    </div>
+                  </div>
+                  <button onClick={() => { setSelectedLead(null); setIsExpanded(false); setPanelWidth(DEFAULT_PANEL_WIDTH); }}
+                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors shrink-0">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Actions row */}
+                <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 shrink-0">
+                  <div className="flex items-center gap-2">
+                    {isExpanded ? (
+                      <button onClick={collapsePanel} title="Küçült"
+                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
+                        <PanelLeftClose className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button onClick={() => { setSnapTransition(true); setIsExpanded(true); setTimeout(() => setSnapTransition(false), 250); }} title="Genişlet"
+                        className="w-6 h-6 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
+                        <Maximize2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                    <button className="text-xs text-blue-600 hover:underline font-medium">Kaydı Görüntüle</button>
+                  </div>
+                  <button className="text-xs text-slate-600 flex items-center gap-1 hover:text-slate-900 font-medium">
+                    İşlemler <ChevronDown className="w-3 h-3" />
+                  </button>
+                </div>
+
+                {/* Action buttons */}
+                <div className={`border-b border-slate-200 shrink-0 ${isLarge ? "px-6 py-4" : "px-4 py-3"}`}>
+                  <div className={`flex items-start ${isLarge ? "gap-6 justify-start" : "justify-between gap-1"}`}>
+                    {ACTION_BUTTONS.map(({ icon: Icon, label }) => (
+                      <div key={label} className="flex flex-col items-center gap-1">
+                        <button className={`rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors ${isLarge ? "w-11 h-11" : "w-8 h-8"}`}>
+                          <Icon className={`text-slate-600 ${isLarge ? "w-5 h-5" : "w-3.5 h-3.5"}`} />
+                        </button>
+                        <span className={`text-slate-500 ${isLarge ? "text-xs" : "text-[9px]"}`}>{label}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Fields */}
+                <div className="flex-1 overflow-auto px-4 py-3">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Lead Bilgileri</p>
+                  {isLarge ? (
+                    <div className="grid grid-cols-3 gap-x-8 gap-y-4">
+                      {tableCols.map(col => (
+                        <div key={col.id} className="flex flex-col gap-0.5">
+                          <span className="text-[10px] text-slate-400 font-medium">{col.label}</span>
+                          {col.id === "statu" ? (
+                            <span className={`inline-flex w-fit px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
+                          ) : col.id === "eposta" ? (
+                            <span className="text-sm text-blue-600 truncate">{getCellValue(selectedLead, col.id)}</span>
+                          ) : (
+                            <span className="text-sm text-slate-700">{getCellValue(selectedLead, col.id)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : isMedium ? (
+                    <div className="space-y-2">
+                      {tableCols.map(col => (
+                        <div key={col.id} className="flex items-start justify-between gap-3 py-1 border-b border-slate-50">
+                          <span className="text-[10px] text-slate-400 font-medium shrink-0 w-32">{col.label}</span>
+                          {col.id === "statu" ? (
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
+                          ) : col.id === "eposta" ? (
+                            <span className="text-xs text-blue-600 truncate">{getCellValue(selectedLead, col.id)}</span>
+                          ) : (
+                            <span className="text-xs text-slate-700 text-right">{getCellValue(selectedLead, col.id)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {tableCols.map(col => (
+                        <div key={col.id} className="flex flex-col gap-0.5">
+                          <span className="text-[10px] text-slate-400 font-medium">{col.label}</span>
+                          {col.id === "statu" ? (
+                            <span className={`inline-flex w-fit px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
+                          ) : col.id === "eposta" ? (
+                            <span className="text-xs text-blue-600">{getCellValue(selectedLead, col.id)}</span>
+                          ) : (
+                            <span className="text-xs text-slate-700">{getCellValue(selectedLead, col.id)}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   )}
                 </div>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {isExpanded ? (
-                  <button onClick={collapsePanel} title="Küçült"
-                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
-                    <PanelLeftClose className="w-4 h-4" />
-                  </button>
-                ) : (
-                  <button onClick={() => { setSnapTransition(true); setIsExpanded(true); setTimeout(() => setSnapTransition(false), 250); }} title="Genişlet"
-                    className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
-                    <Maximize2 className="w-4 h-4" />
-                  </button>
-                )}
-                <button onClick={() => { setSelectedLead(null); setIsExpanded(false); setPanelWidth(DEFAULT_PANEL_WIDTH); }}
-                  className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors">
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Actions row */}
-            <div className="flex items-center justify-between px-4 py-2 border-b border-slate-100 shrink-0">
-              <button className="text-xs text-blue-600 hover:underline font-medium">Kaydı Görüntüle</button>
-              <button className="text-xs text-slate-600 flex items-center gap-1 hover:text-slate-900 font-medium">
-                İşlemler <ChevronDown className="w-3 h-3" />
-              </button>
-            </div>
-
-            {/* Action buttons — row grows with panel */}
-            <div className={`border-b border-slate-200 shrink-0 ${isLarge ? "px-6 py-4" : "px-4 py-3"}`}>
-              <div className={`flex items-start ${isLarge ? "gap-6 justify-start" : "justify-between gap-1"}`}>
-                {ACTION_BUTTONS.map(({ icon: Icon, label }) => (
-                  <div key={label} className="flex flex-col items-center gap-1">
-                    <button className={`rounded-full border border-slate-200 flex items-center justify-center hover:bg-slate-50 transition-colors ${isLarge ? "w-11 h-11" : "w-8 h-8"}`}>
-                      <Icon className={`text-slate-600 ${isLarge ? "w-5 h-5" : "w-3.5 h-3.5"}`} />
-                    </button>
-                    <span className={`text-slate-500 ${isLarge ? "text-xs" : "text-[9px]"}`}>{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Fields — layout adapts to panel size */}
-            <div className="flex-1 overflow-auto px-4 py-3">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-3">Lead Bilgileri</p>
-
-              {isLarge ? (
-                /* Expanded: 3-column grid */
-                <div className="grid grid-cols-3 gap-x-8 gap-y-4">
-                  {tableCols.map(col => (
-                    <div key={col.id} className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-400 font-medium">{col.label}</span>
-                      {col.id === "statu" ? (
-                        <span className={`inline-flex w-fit px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
-                      ) : col.id === "eposta" ? (
-                        <span className="text-sm text-blue-600 truncate">{getCellValue(selectedLead, col.id)}</span>
-                      ) : (
-                        <span className="text-sm text-slate-700">{getCellValue(selectedLead, col.id)}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : isMedium ? (
-                /* Medium: label left / value right */
-                <div className="space-y-2">
-                  {tableCols.map(col => (
-                    <div key={col.id} className="flex items-start justify-between gap-3 py-1 border-b border-slate-50">
-                      <span className="text-[10px] text-slate-400 font-medium shrink-0 w-32">{col.label}</span>
-                      {col.id === "statu" ? (
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
-                      ) : col.id === "eposta" ? (
-                        <span className="text-xs text-blue-600 truncate">{getCellValue(selectedLead, col.id)}</span>
-                      ) : (
-                        <span className="text-xs text-slate-700 text-right">{getCellValue(selectedLead, col.id)}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                /* Narrow: stacked */
-                <div className="space-y-3">
-                  {tableCols.map(col => (
-                    <div key={col.id} className="flex flex-col gap-0.5">
-                      <span className="text-[10px] text-slate-400 font-medium">{col.label}</span>
-                      {col.id === "statu" ? (
-                        <span className={`inline-flex w-fit px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
-                      ) : col.id === "eposta" ? (
-                        <span className="text-xs text-blue-600">{getCellValue(selectedLead, col.id)}</span>
-                      ) : (
-                        <span className="text-xs text-slate-700">{getCellValue(selectedLead, col.id)}</span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+              </>
+            ) : null}
           </div>
         )}
       </div>
+
+      {/* OTP Verification Modal */}
+      {showOtpModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 pt-6 pb-0">
+              <div />
+              <button
+                onClick={() => setShowOtpModal(false)}
+                className="w-7 h-7 flex items-center justify-center text-slate-400 hover:text-slate-700 rounded-full hover:bg-slate-100 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex flex-col items-center px-6 pt-2 pb-6 text-center">
+              {/* Phone icon */}
+              <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center mb-4">
+                <Phone className="w-7 h-7 text-slate-500" />
+              </div>
+
+              <h3 className="text-base font-bold text-slate-900 mb-1">Telefon numaranızı doğrulayın</h3>
+              <p className="text-xs text-slate-500 mb-1">
+                Aşağıdaki numaraya SMS ile bir kod gönderdik:
+              </p>
+              <p className="text-sm font-semibold text-slate-700 mb-4">
+                +{formData.ulkeKodu} {formData.telefon.replace(/(\d{3})(\d{3})(\d{2})(\d{2})/, "$1 - $2 - $3 - $4")}
+              </p>
+
+              {/* OTP inputs */}
+              <div className="flex items-center gap-3 mb-4">
+                {otpValues.map((val, i) => (
+                  <input
+                    key={i}
+                    ref={el => { otpInputRefs.current[i] = el; }}
+                    type="text"
+                    inputMode="numeric"
+                    maxLength={1}
+                    value={val}
+                    onChange={e => {
+                      const ch = e.target.value.replace(/\D/, "");
+                      const next = [...otpValues];
+                      next[i] = ch;
+                      setOtpValues(next);
+                      if (ch && i < 3) otpInputRefs.current[i + 1]?.focus();
+                    }}
+                    onKeyDown={e => {
+                      if (e.key === "Backspace" && !val && i > 0) otpInputRefs.current[i - 1]?.focus();
+                    }}
+                    className="w-12 h-14 text-center text-lg font-bold border-2 border-slate-200 rounded-xl outline-none focus:border-teal-500 transition-colors"
+                  />
+                ))}
+              </div>
+
+              {/* Countdown */}
+              <p className="text-xs text-slate-400 mb-5">
+                Kodun geçerlilik süresi:{" "}
+                <span className="font-semibold text-slate-700">
+                  {String(Math.floor(otpCountdown / 60)).padStart(2, "0")}:
+                  {String(otpCountdown % 60).padStart(2, "0")}
+                </span>
+              </p>
+
+              {/* Actions */}
+              <div className="flex items-center gap-3 w-full mb-4">
+                <button
+                  onClick={() => setShowOtpModal(false)}
+                  className="flex-1 py-2.5 border border-slate-300 rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Geri
+                </button>
+                <button
+                  onClick={handleOtpConfirm}
+                  disabled={otpValues.join("").length < 4}
+                  className="flex-1 py-2.5 bg-teal-500 hover:bg-teal-600 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-xl text-xs font-semibold transition-colors"
+                >
+                  Kodu Doğrula
+                </button>
+              </div>
+
+              {/* Resend links */}
+              <p className="text-[11px] text-slate-400">
+                Bir kod almadınız mı?{" "}
+                <button
+                  onClick={() => setOtpCountdown(180)}
+                  className="text-teal-600 font-semibold hover:underline"
+                >
+                  Yeniden Gönder
+                </button>
+              </p>
+              <button className="mt-2 text-[11px] text-emerald-600 font-semibold hover:underline">
+                Whatsapp ile Gönder
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
