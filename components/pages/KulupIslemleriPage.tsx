@@ -193,6 +193,7 @@ export default function KulupIslemleriPage({ activeSubId = "aktivite-takvimi" }:
   if (activeSubId === "egitmen-listesi") return <PlaceholderView title="Eğitmen Listesi" />;
   if (activeSubId === "egitmen-egitimleri") return <PlaceholderView title="Eğitmen Eğitimleri" />;
   if (activeSubId === "egitmen-paketleri") return <PlaceholderView title="Eğitmen Paketleri" />;
+  if (activeSubId === "biletlerim") return <PlaceholderView title="Biletlerim" />;
 
   return (
     <div className="flex-1 bg-white overflow-auto">

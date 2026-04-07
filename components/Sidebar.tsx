@@ -50,6 +50,7 @@ const navItemsByModule: Record<string, NavItem[]> = {
     { icon: Users2, label: "Eğitmen Listesi", id: "egitmen-listesi" },
     { icon: BookOpen, label: "Eğitmen Eğitimleri", id: "egitmen-egitimleri" },
     { icon: Package, label: "Eğitmen Paketleri", id: "egitmen-paketleri" },
+    { icon: Ticket, label: "Biletlerim", id: "biletlerim" },
   ],
   "aktivite-islemleri": [
     { icon: Home, label: "Anasayfa", id: "home" },
