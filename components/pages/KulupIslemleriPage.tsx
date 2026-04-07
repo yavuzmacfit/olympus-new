@@ -125,8 +125,27 @@ function formatGunBaslik(monday: Date, offset: number): string {
   return `${d.getDate()}/${String(d.getMonth() + 1).padStart(2, "0")} ${TR_GUNLER[offset]}`;
 }
 
+// --- Placeholder ---
+function PlaceholderView({ title }: { title: string }) {
+  return (
+    <div className="flex-1 bg-white overflow-auto">
+      <div className="p-8 flex flex-col gap-6">
+        <h1
+          className="text-lg font-bold text-slate-800"
+          style={{ fontFamily: "var(--font-barlow-condensed)" }}
+        >
+          {title}
+        </h1>
+        <div className="border border-slate-200 rounded p-12 flex items-center justify-center">
+          <p className="text-sm text-slate-400">Yakında</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // --- Component ---
-export default function KulupIslemleriPage() {
+export default function KulupIslemleriPage({ activeSubId = "aktivite-takvimi" }: { activeSubId?: string }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [gorunum, setGorunum] = useState<"haftalik" | "aylik">("haftalik");
   const [egitmenFilter, setEgitmenFilter] = useState("");
@@ -170,6 +189,10 @@ export default function KulupIslemleriPage() {
     }
     return byGun;
   }, [weekOffset, egitmenFilter, aktiviteTipiFilter]);
+
+  if (activeSubId === "egitmen-listesi") return <PlaceholderView title="Eğitmen Listesi" />;
+  if (activeSubId === "egitmen-egitimleri") return <PlaceholderView title="Eğitmen Eğitimleri" />;
+  if (activeSubId === "egitmen-paketleri") return <PlaceholderView title="Eğitmen Paketleri" />;
 
   return (
     <div className="flex-1 bg-white overflow-auto">

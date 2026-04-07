@@ -62,6 +62,7 @@ export default function Page() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeView, setActiveView] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [kulupSubPage, setKulupSubPage] = useState("aktivite-takvimi");
   const [clubMenuOpen, setClubMenuOpen] = useState(false);
 
   // Drag state — use refs to avoid stale closures in pointer handlers
@@ -380,7 +381,13 @@ export default function Page() {
 
         {tabs.length > 0 && (
           <div className={`flex flex-1 overflow-hidden ${!homeActive ? "" : "hidden"}`}>
-            <Sidebar activeModuleId={activeView} collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+            <Sidebar
+              activeModuleId={activeView}
+              collapsed={sidebarCollapsed}
+              onCollapse={setSidebarCollapsed}
+              onNavItemClick={(id) => { if (activeView === "kulup-islemleri") setKulupSubPage(id); }}
+              activeNavItemId={activeView === "kulup-islemleri" ? kulupSubPage : undefined}
+            />
             <div className="flex-1 overflow-hidden relative">
               {tabs.map(tab => (
                 <div key={tab.id} className={`absolute inset-0 ${activeView === tab.id ? "flex" : "hidden"}`}>
@@ -388,7 +395,7 @@ export default function Page() {
                   {tab.id === "uyelik-islemleri"   && <UyelikIslemleriPage />}
                   {tab.id === "kampanya-islemleri" && <KampanyaIslemleriPage />}
                   {tab.id === "tahsilat-islemleri" && <TahsilatIslemleriPage />}
-                  {tab.id === "kulup-islemleri"    && <KulupIslemleriPage />}
+                  {tab.id === "kulup-islemleri"    && <KulupIslemleriPage activeSubId={kulupSubPage} />}
                   {tab.id === "aktivite-islemleri" && <AktiviteIslemleriPage />}
                 </div>
               ))}
