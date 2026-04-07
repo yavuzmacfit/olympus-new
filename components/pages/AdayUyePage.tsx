@@ -124,8 +124,8 @@ interface UyeResult {
 }
 
 const MOCK_UYELER: UyeResult[] = [
-  { ad: "Ahmet", soyad: "Kaya", initials: "AK", color: "bg-red-800",
-    tckn: "12345678901", uyeNo: "U00123", uyelikTipi: "Bireysel",
+  { ad: "Mars", soyad: "Test", initials: "MT", color: "bg-red-800",
+    tckn: "123", uyeNo: "123", uyelikTipi: "Bireysel",
     uyelikDurumu: "Aktif", kulup: "Ortaköy",
     baslangicTarihi: "01.01.2026", bitisTarihi: "31.12.2026" },
   { ad: "Fatma", soyad: "Demir", initials: "FD", color: "bg-blue-700",
@@ -541,12 +541,12 @@ export default function AdayUyePage() {
                     onKeyDown={e => {
                       if (e.key !== "Enter") return;
                       const q = uyeSearchQuery.trim();
-                      if (uyeSearchType === "tckn" && !/^\d{11}$/.test(q)) { setUyeSearchError("TCKN 11 haneli olmalıdır."); return; }
+                      if (!q) { setUyeSearchError("Lütfen bir değer girin."); return; }
                       setUyeSearchError("");
                       setUyeSearchResult(MOCK_UYELER.find(u => uyeSearchType === "tckn" ? u.tckn === q : u.uyeNo === q) ?? null);
                       setUyeSearched(true);
                     }}
-                    placeholder={uyeSearchType === "tckn" ? "TCKN (11 hane)" : "Üye No (ör. U00123)"}
+                    placeholder={uyeSearchType === "tckn" ? "TCKN" : "Üye No"}
                     className={`pl-8 pr-3 py-1.5 text-xs border rounded w-56 focus:outline-none focus:ring-1 focus:ring-[#df1d2f]/30 ${uyeSearchError ? "border-[#df1d2f]" : "border-slate-300"}`}
                     onClick={e => e.stopPropagation()}
                   />
@@ -554,7 +554,7 @@ export default function AdayUyePage() {
                 <button
                   onClick={() => {
                     const q = uyeSearchQuery.trim();
-                    if (uyeSearchType === "tckn" && !/^\d{11}$/.test(q)) { setUyeSearchError("TCKN 11 haneli olmalıdır."); return; }
+                    if (!q) { setUyeSearchError("Lütfen bir değer girin."); return; }
                     setUyeSearchError("");
                     setUyeSearchResult(MOCK_UYELER.find(u => uyeSearchType === "tckn" ? u.tckn === q : u.uyeNo === q) ?? null);
                     setUyeSearched(true);
