@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, BarChart2, Users, Calendar, ChevronUp, ChevronDown, ChevronLeft, Bookmark, CreditCard, Percent, Ticket, List, Landmark, UserPlus, Snowflake } from "lucide-react";
+import { Home, BarChart2, Users, Calendar, ChevronUp, ChevronDown, ChevronLeft, Bookmark, Percent, Ticket, List, Landmark, UserPlus, Snowflake, Banknote, Dumbbell, CalendarDays, Users2, BookOpen, Package } from "lucide-react";
 
 interface NavItem {
   icon: React.ElementType;
@@ -30,8 +30,6 @@ const navItemsByModule: Record<string, NavItem[]> = {
   "uyelik-islemleri": [
     { icon: Home, label: "Anasayfa", id: "home" },
     { icon: Bookmark, label: "Üyelik İşlemleri", id: "uyelik-islemleri" },
-    { icon: Users, label: "Üye Bilgisi Güncelle", id: "uye-bilgisi-guncelle" },
-    { icon: CreditCard, label: "Borçlu Üye Tahsilatı", id: "borclu-uye-tahsilati" },
   ],
   "kampanya-islemleri": [
     { icon: Home, label: "Anasayfa", id: "home" },
@@ -42,15 +40,32 @@ const navItemsByModule: Record<string, NavItem[]> = {
     { icon: UserPlus, label: "Referans Kampanyası", id: "referans-kampanya" },
     { icon: Snowflake, label: "Dondurma Kampanyası", id: "dondurma-kampanya" },
   ],
+  "tahsilat-islemleri": [
+    { icon: Home, label: "Anasayfa", id: "home" },
+    { icon: Banknote, label: "Tahsilat İşlemleri", id: "tahsilat-islemleri" },
+  ],
+  "kulup-islemleri": [
+    { icon: Home, label: "Anasayfa", id: "home" },
+    { icon: CalendarDays, label: "Aktivite Takvimi", id: "aktivite-takvimi" },
+    { icon: Users2, label: "Eğitmen Listesi", id: "egitmen-listesi" },
+    { icon: BookOpen, label: "Eğitmen Eğitimleri", id: "egitmen-egitimleri" },
+    { icon: Package, label: "Eğitmen Paketleri", id: "egitmen-paketleri" },
+  ],
+  "aktivite-islemleri": [
+    { icon: Home, label: "Anasayfa", id: "home" },
+    { icon: Dumbbell, label: "Aktivite İşlemleri", id: "aktivite-islemleri" },
+  ],
 };
 
 interface SidebarProps {
   activeModuleId: string;
   collapsed: boolean;
   onCollapse: (val: boolean) => void;
+  onNavItemClick?: (id: string) => void;
+  activeNavItemId?: string;
 }
 
-export default function Sidebar({ activeModuleId, collapsed, onCollapse }: SidebarProps) {
+export default function Sidebar({ activeModuleId, collapsed, onCollapse, onNavItemClick, activeNavItemId }: SidebarProps) {
   const [expandedId, setExpandedId] = useState<string | null>(
     activeModuleId === "aday-uye" ? "aday-uye" : null
   );
@@ -87,10 +102,12 @@ export default function Sidebar({ activeModuleId, collapsed, onCollapse }: Sideb
                   onClick={() => {
                     if (!collapsed && children) {
                       toggleExpand(id);
+                    } else if (!children && id !== "home") {
+                      onNavItemClick?.(id);
                     }
                   }}
                   className={`w-full flex items-center gap-3 px-2 py-4 rounded-md text-xs font-medium transition-colors ${
-                    !children && activeModuleId === id
+                    !children && (activeNavItemId ? activeNavItemId === id : activeModuleId === id)
                       ? "bg-white/10 text-white"
                       : "text-white/70 hover:bg-white/5 hover:text-white"
                   }`}
