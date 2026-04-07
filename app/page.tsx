@@ -1,19 +1,25 @@
 "use client";
 
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles } from "lucide-react";
+import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HomePageContent from "@/components/pages/HomePage";
 import AdayUyePage from "@/components/pages/AdayUyePage";
 import UyelikIslemleriPage from "@/components/pages/UyelikIslemleriPage";
 import KampanyaIslemleriPage from "@/components/pages/KampanyaIslemleriPage";
+import TahsilatIslemleriPage from "@/components/pages/TahsilatIslemleriPage";
+import KulupIslemleriPage from "@/components/pages/KulupIslemleriPage";
+import AktiviteIslemleriPage from "@/components/pages/AktiviteIslemleriPage";
 
 interface Tab { id: string; title: string; icon: React.ElementType; }
 
 const MODULE_CONFIG: Record<string, { title: string; icon: React.ElementType }> = {
-  "aday-uye":           { title: "Aday Üye",           icon: Users    },
-  "uyelik-islemleri":   { title: "Üyelik İşlemleri",   icon: Bookmark },
-  "kampanya-islemleri": { title: "Kampanya İşlemleri", icon: Sparkles },
+  "aday-uye":            { title: "Satış İşlemleri",      icon: Users    },
+  "uyelik-islemleri":    { title: "Üyelik İşlemleri",    icon: Bookmark },
+  "kampanya-islemleri":  { title: "Kampanya İşlemleri",  icon: Sparkles },
+  "tahsilat-islemleri":  { title: "Tahsilat İşlemleri",  icon: Banknote  },
+  "kulup-islemleri":     { title: "Kulüp İşlemleri",     icon: Building2 },
+  "aktivite-islemleri":  { title: "Aktivite İşlemleri",  icon: Dumbbell  },
 };
 
 // Concave corners live INSIDE each tab button so they move with it during drag.
@@ -56,6 +62,8 @@ export default function Page() {
   const [tabs, setTabs] = useState<Tab[]>([]);
   const [activeView, setActiveView] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
+  const [kulupSubPage, setKulupSubPage] = useState("aktivite-takvimi");
+  const [clubMenuOpen, setClubMenuOpen] = useState(false);
 
   // Drag state — use refs to avoid stale closures in pointer handlers
   const [dragState, setDragStateRaw] = useState<{
@@ -339,10 +347,26 @@ export default function Page() {
         <div className="flex items-center gap-4 pr-4 text-white/80">
           <button className="hover:text-white transition-colors"><Phone className="w-4 h-4" /></button>
           <button className="hover:text-white transition-colors"><Bell className="w-4 h-4" /></button>
-          <div className="flex items-center gap-2 cursor-pointer border-l border-white/20 pl-3">
-            <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-white text-[10px] font-bold">MA</div>
-            <span className="text-xs text-white/80">Mars Athletic Club</span>
-            <ChevronDown className="w-3.5 h-3.5 text-white/60" />
+          <div className="relative border-l border-white/20 pl-3">
+            <button
+              onClick={() => setClubMenuOpen(prev => !prev)}
+              className="flex items-center gap-2 cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded-full bg-slate-400 flex items-center justify-center text-white text-[10px] font-bold">MA</div>
+              <span className="text-xs text-white/80">Mars Athletic Club</span>
+              <ChevronDown className="w-3.5 h-3.5 text-white/60" />
+            </button>
+            {clubMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-48 bg-[#171a1d] rounded-lg shadow-lg border border-white/10 py-1 z-50">
+                <button className="w-full text-left px-4 py-2 text-xs text-white/70 hover:bg-white/5 hover:text-white transition-colors">
+                  Kullanıcı Yönetimi
+                </button>
+                <div className="mx-3 h-px bg-white/10 my-1" />
+                <button className="w-full text-left px-4 py-2 text-xs text-white/70 hover:bg-white/5 hover:text-white transition-colors">
+                  Çıkış Yap
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -357,13 +381,22 @@ export default function Page() {
 
         {tabs.length > 0 && (
           <div className={`flex flex-1 overflow-hidden ${!homeActive ? "" : "hidden"}`}>
-            <Sidebar activeModuleId={activeView} collapsed={sidebarCollapsed} onCollapse={setSidebarCollapsed} />
+            <Sidebar
+              activeModuleId={activeView}
+              collapsed={sidebarCollapsed}
+              onCollapse={setSidebarCollapsed}
+              onNavItemClick={(id) => { if (activeView === "kulup-islemleri") setKulupSubPage(id); }}
+              activeNavItemId={activeView === "kulup-islemleri" ? kulupSubPage : undefined}
+            />
             <div className="flex-1 overflow-hidden relative">
               {tabs.map(tab => (
                 <div key={tab.id} className={`absolute inset-0 ${activeView === tab.id ? "flex" : "hidden"}`}>
-                  {tab.id === "aday-uye"           && <AdayUyePage />}
+                  {tab.id === "aday-uye"            && <AdayUyePage />}
                   {tab.id === "uyelik-islemleri"   && <UyelikIslemleriPage />}
                   {tab.id === "kampanya-islemleri" && <KampanyaIslemleriPage />}
+                  {tab.id === "tahsilat-islemleri" && <TahsilatIslemleriPage />}
+                  {tab.id === "kulup-islemleri"    && <KulupIslemleriPage activeSubId={kulupSubPage} />}
+                  {tab.id === "aktivite-islemleri" && <AktiviteIslemleriPage />}
                 </div>
               ))}
             </div>
