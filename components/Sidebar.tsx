@@ -57,9 +57,9 @@ const navItemsByModule: Record<string, NavItem[]> = {
   ],
   "destek-islemleri": [
     { icon: Home, label: "Anasayfa", id: "home" },
-    { icon: Headphones, label: "Destek Talepleri", id: "destek-talepleri" },
-    { icon: BarChart3, label: "SLA Raporları", id: "sla-raporlari" },
-    { icon: Building2, label: "Kulüp Bazlı Rapor", id: "kulup-bazli-rapor" },
+    { icon: Headphones, label: "Ham Rapor", id: "ham-rapor" },
+    { icon: Users2, label: "Agent Raporu", id: "agent-raporu" },
+    { icon: BarChart3, label: "SLA Raporu", id: "sla-raporu" },
   ],
 };
 

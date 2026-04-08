@@ -65,7 +65,7 @@ export default function Page() {
   const [activeView, setActiveView] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [kulupSubPage, setKulupSubPage] = useState("aktivite-takvimi");
-  const [destekSubPage, setDestekSubPage] = useState("destek-talepleri");
+  const [destekSubPage, setDestekSubPage] = useState("ham-rapor");
   const [clubMenuOpen, setClubMenuOpen] = useState(false);
 
   // Drag state — use refs to avoid stale closures in pointer handlers
