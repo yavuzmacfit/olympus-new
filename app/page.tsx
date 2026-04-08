@@ -1,7 +1,7 @@
 "use client";
 
 import { Fragment, useLayoutEffect, useRef, useState } from "react";
-import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell } from "lucide-react";
+import { Phone, Bell, ChevronDown, Home, X, Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell, Headphones } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import HomePageContent from "@/components/pages/HomePage";
 import AdayUyePage from "@/components/pages/AdayUyePage";
@@ -10,6 +10,7 @@ import KampanyaIslemleriPage from "@/components/pages/KampanyaIslemleriPage";
 import TahsilatIslemleriPage from "@/components/pages/TahsilatIslemleriPage";
 import KulupIslemleriPage from "@/components/pages/KulupIslemleriPage";
 import AktiviteIslemleriPage from "@/components/pages/AktiviteIslemleriPage";
+import DestekIslemleriPage from "@/components/pages/DestekIslemleriPage";
 
 interface Tab { id: string; title: string; icon: React.ElementType; }
 
@@ -20,6 +21,7 @@ const MODULE_CONFIG: Record<string, { title: string; icon: React.ElementType }> 
   "tahsilat-islemleri":  { title: "Tahsilat İşlemleri",  icon: Banknote  },
   "kulup-islemleri":     { title: "Kulüp İşlemleri",     icon: Building2 },
   "aktivite-islemleri":  { title: "Aktivite İşlemleri",  icon: Dumbbell  },
+  "destek-islemleri":    { title: "Destek İşlemleri",    icon: Headphones },
 };
 
 // Concave corners live INSIDE each tab button so they move with it during drag.
@@ -63,6 +65,7 @@ export default function Page() {
   const [activeView, setActiveView] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [kulupSubPage, setKulupSubPage] = useState("aktivite-takvimi");
+  const [destekSubPage, setDestekSubPage] = useState("destek-talepleri");
   const [clubMenuOpen, setClubMenuOpen] = useState(false);
 
   // Drag state — use refs to avoid stale closures in pointer handlers
@@ -385,8 +388,15 @@ export default function Page() {
               activeModuleId={activeView}
               collapsed={sidebarCollapsed}
               onCollapse={setSidebarCollapsed}
-              onNavItemClick={(id) => { if (activeView === "kulup-islemleri") setKulupSubPage(id); }}
-              activeNavItemId={activeView === "kulup-islemleri" ? kulupSubPage : undefined}
+              onNavItemClick={(id) => {
+                if (activeView === "kulup-islemleri") setKulupSubPage(id);
+                if (activeView === "destek-islemleri") setDestekSubPage(id);
+              }}
+              activeNavItemId={
+                activeView === "kulup-islemleri" ? kulupSubPage :
+                activeView === "destek-islemleri" ? destekSubPage :
+                undefined
+              }
             />
             <div className="flex-1 overflow-hidden relative">
               {tabs.map(tab => (
@@ -397,6 +407,7 @@ export default function Page() {
                   {tab.id === "tahsilat-islemleri" && <TahsilatIslemleriPage />}
                   {tab.id === "kulup-islemleri"    && <KulupIslemleriPage activeSubId={kulupSubPage} />}
                   {tab.id === "aktivite-islemleri" && <AktiviteIslemleriPage />}
+                  {tab.id === "destek-islemleri"   && <DestekIslemleriPage activeSubId={destekSubPage} />}
                 </div>
               ))}
             </div>

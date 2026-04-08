@@ -1,6 +1,6 @@
 "use client";
 
-import { Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell, ChevronRight } from "lucide-react";
+import { Users, Bookmark, Sparkles, Banknote, Building2, Dumbbell, Headphones, ChevronRight } from "lucide-react";
 
 const modules = [
   {
@@ -49,6 +49,14 @@ const modules = [
     iconBg: "bg-teal-50",
     title: "Aktivite İşlemleri",
     description: "Kulüp aktivitelerini yönetin, ders programlarını oluşturun ve katılımları takip edin.",
+    buttonLabel: "İŞLEMLERE GİT",
+  },
+  {
+    id: "destek-islemleri",
+    icon: <Headphones className="w-7 h-7 text-indigo-600" />,
+    iconBg: "bg-indigo-50",
+    title: "Destek İşlemleri",
+    description: "Destek taleplerini takip edin, SLA sürelerini izleyin ve kulüp bazlı raporları görüntüleyin.",
     buttonLabel: "İŞLEMLERE GİT",
   },
 ];

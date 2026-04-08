@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, BarChart2, Users, Calendar, ChevronUp, ChevronDown, ChevronLeft, Bookmark, Percent, Ticket, List, Landmark, UserPlus, Snowflake, Banknote, Dumbbell, CalendarDays, Users2, BookOpen, Package } from "lucide-react";
+import { Home, BarChart2, Users, Calendar, ChevronUp, ChevronDown, ChevronLeft, Bookmark, Percent, Ticket, List, Landmark, UserPlus, Snowflake, Banknote, Dumbbell, CalendarDays, Users2, BookOpen, Package, Headphones, BarChart3, Building2 } from "lucide-react";
 
 interface NavItem {
   icon: React.ElementType;
@@ -54,6 +54,12 @@ const navItemsByModule: Record<string, NavItem[]> = {
   "aktivite-islemleri": [
     { icon: Home, label: "Anasayfa", id: "home" },
     { icon: Dumbbell, label: "Aktivite İşlemleri", id: "aktivite-islemleri" },
+  ],
+  "destek-islemleri": [
+    { icon: Home, label: "Anasayfa", id: "home" },
+    { icon: Headphones, label: "Destek Talepleri", id: "destek-talepleri" },
+    { icon: BarChart3, label: "SLA Raporları", id: "sla-raporlari" },
+    { icon: Building2, label: "Kulüp Bazlı Rapor", id: "kulup-bazli-rapor" },
   ],
 };
 
