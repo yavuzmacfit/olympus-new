@@ -156,6 +156,13 @@ const ALL_TICKETS: Ticket[] = [
 
 const GROUPS: Group[] = ["MAC Ürün Yönetimi", "MAC Teknik Destek", "MAC Üyelik", "MAC Finans", "MAC Tesis"];
 const STATUS_LABELS: Record<Status, string> = { open: "Açık", pending: "Beklemede", solved: "Çözüldü", closed: "Kapatıldı" };
+
+// Helper: "DD.MM.YYYY HH:MM" → Date (for date comparisons)
+function parseTurkishDate(s: string): Date {
+  const [datePart] = s.split(" ");
+  const [dd, mm, yyyy] = datePart.split(".");
+  return new Date(`${yyyy}-${mm}-${dd}`);
+}
 const STATUS_COLORS: Record<Status, string> = {
   open:    "bg-blue-100 text-blue-700",
   pending: "bg-yellow-100 text-yellow-700",
@@ -584,35 +591,51 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
   const tab: TabKey = activeSubId === "agent-raporu" ? "agent" : activeSubId === "sla-raporu" ? "sla" : "ham";
 
   /* Filtreler */
-  const [ticketIdFilter, setTicketIdFilter]     = useState("");
-  const [startDate, setStartDate]               = useState("2026-04-01");
-  const [endDate, setEndDate]                   = useState("2026-04-08");
-  const [selectedStatuses, setSelectedStatuses] = useState<Status[]>([]);
-  const [selectedGroups, setSelectedGroups]     = useState<Group[]>([]);
-  const [appliedFilters, setAppliedFilters]     = useState<{
+  const [ticketIdFilter, setTicketIdFilter]         = useState("");
+  const [startDate, setStartDate]                   = useState("2026-04-01");
+  const [endDate, setEndDate]                       = useState("2026-04-08");
+  const [selectedStatuses, setSelectedStatuses]     = useState<Status[]>([]);
+  const [selectedGroups, setSelectedGroups]         = useState<Group[]>([]);
+  const [selectedAgents, setSelectedAgents]         = useState<string[]>([]);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+
+  const [appliedFilters, setAppliedFilters] = useState<{
     ticketId: string; startDate: string; endDate: string;
     statuses: Status[]; groups: Group[];
-  }>({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [] });
+    agents: string[]; categories: string[];
+  }>({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [], agents: [], categories: [] });
 
-  const toggleStatus = (s: Status) =>
-    setSelectedStatuses(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev, s]);
-  const toggleGroup  = (g: Group) =>
-    setSelectedGroups(prev => prev.includes(g) ? prev.filter(x=>x!==g) : [...prev, g]);
+  const toggleStatus   = (s: Status)  => setSelectedStatuses(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev, s]);
+  const toggleGroup    = (g: Group)   => setSelectedGroups(prev => prev.includes(g) ? prev.filter(x=>x!==g) : [...prev, g]);
+  const toggleAgent    = (a: string)  => setSelectedAgents(prev => prev.includes(a) ? prev.filter(x=>x!==a) : [...prev, a]);
+  const toggleCategory = (c: string)  => setSelectedCategories(prev => prev.includes(c) ? prev.filter(x=>x!==c) : [...prev, c]);
 
   const applyFilters = () =>
-    setAppliedFilters({ ticketId: ticketIdFilter, startDate, endDate, statuses: selectedStatuses, groups: selectedGroups });
+    setAppliedFilters({ ticketId: ticketIdFilter, startDate, endDate, statuses: selectedStatuses, groups: selectedGroups, agents: selectedAgents, categories: selectedCategories });
 
   const resetFilters = () => {
     setTicketIdFilter(""); setStartDate("2026-04-01"); setEndDate("2026-04-08");
-    setSelectedStatuses([]); setSelectedGroups([]);
-    setAppliedFilters({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [] });
+    setSelectedStatuses([]); setSelectedGroups([]); setSelectedAgents([]); setSelectedCategories([]);
+    setAppliedFilters({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [], agents: [], categories: [] });
   };
 
+  const allAgents     = useMemo(() => [...new Set(ALL_TICKETS.map(t => t.agent).filter(a => a !== "-"))].sort(), []);
+  const allCategories = useMemo(() => [...new Set(ALL_TICKETS.map(t => t.category))].sort(), []);
+
   const filteredTickets = useMemo(() => {
+    const start = appliedFilters.startDate ? new Date(appliedFilters.startDate) : null;
+    const end   = appliedFilters.endDate   ? new Date(appliedFilters.endDate)   : null;
     return ALL_TICKETS.filter(t => {
       if (appliedFilters.ticketId && !t.id.includes(appliedFilters.ticketId)) return false;
       if (appliedFilters.statuses.length && !appliedFilters.statuses.includes(t.status)) return false;
       if (appliedFilters.groups.length && !appliedFilters.groups.includes(t.group)) return false;
+      if (appliedFilters.agents.length && !appliedFilters.agents.includes(t.agent)) return false;
+      if (appliedFilters.categories.length && !appliedFilters.categories.includes(t.category)) return false;
+      if (start || end) {
+        const created = parseTurkishDate(t.createdAt);
+        if (start && created < start) return false;
+        if (end   && created > end)   return false;
+      }
       return true;
     });
   }, [appliedFilters]);
@@ -625,18 +648,21 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
         <h2 className="text-sm font-bold text-slate-700 mb-3">Filtreler</h2>
 
         <div className="flex flex-wrap items-end gap-3">
-          {/* Ticket ID */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Ticket ID</label>
-            <input
-              value={ticketIdFilter}
-              onChange={e => setTicketIdFilter(e.target.value)}
-              placeholder="örn. 12345"
-              className="w-36 px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-            />
-          </div>
 
-          {/* Tarih aralığı */}
+          {/* Ticket ID — sadece ham raporda */}
+          {tab === "ham" && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Ticket ID</label>
+              <input
+                value={ticketIdFilter}
+                onChange={e => setTicketIdFilter(e.target.value)}
+                placeholder="örn. 12345"
+                className="w-36 px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+          )}
+
+          {/* Tarih aralığı — tüm tablarda */}
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Başlangıç Tarihi</label>
             <input type="date" value={startDate} onChange={e=>setStartDate(e.target.value)}
@@ -648,31 +674,85 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
               className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
           </div>
 
-          {/* Durum çoklu seçim */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Durum</label>
-            <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[180px] flex-wrap">
-              {selectedStatuses.map(s => (
-                <span key={s} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
-                  {STATUS_LABELS[s]}
-                  <button onClick={()=>toggleStatus(s)}><X className="w-2.5 h-2.5" /></button>
-                </span>
-              ))}
-              <div className="relative group">
-                <button className="text-[10px] text-slate-400 hover:text-slate-600">+ ekle</button>
-                <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px] hidden group-hover:block">
-                  {(["open","pending","solved","closed"] as Status[]).map(s => (
-                    <button key={s} onClick={()=>toggleStatus(s)}
-                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 ${selectedStatuses.includes(s)?"font-semibold text-indigo-600":""}`}>
-                      {STATUS_LABELS[s]}
-                    </button>
-                  ))}
+          {/* Durum — ham ve sla'da */}
+          {tab !== "agent" && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Durum</label>
+              <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[180px] flex-wrap">
+                {selectedStatuses.map(s => (
+                  <span key={s} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded">
+                    {STATUS_LABELS[s]}
+                    <button onClick={()=>toggleStatus(s)}><X className="w-2.5 h-2.5" /></button>
+                  </span>
+                ))}
+                <div className="relative group">
+                  <button className="text-[10px] text-slate-400 hover:text-slate-600">+ ekle</button>
+                  <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20 min-w-[130px] hidden group-hover:block">
+                    {(["open","pending","solved","closed"] as Status[]).map(s => (
+                      <button key={s} onClick={()=>toggleStatus(s)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 ${selectedStatuses.includes(s)?"font-semibold text-indigo-600":""}`}>
+                        {STATUS_LABELS[s]}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
-          {/* Grup çoklu seçim */}
+          {/* Agent — sadece agent raporunda */}
+          {tab === "agent" && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Agent</label>
+              <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[180px] flex-wrap">
+                {selectedAgents.map(a => (
+                  <span key={a} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {a}
+                    <button onClick={()=>toggleAgent(a)}><X className="w-2.5 h-2.5" /></button>
+                  </span>
+                ))}
+                <div className="relative group">
+                  <button className="text-[10px] text-slate-400 hover:text-slate-600">+ ekle</button>
+                  <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20 min-w-[150px] hidden group-hover:block">
+                    {allAgents.map(a => (
+                      <button key={a} onClick={()=>toggleAgent(a)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 whitespace-nowrap ${selectedAgents.includes(a)?"font-semibold text-indigo-600":""}`}>
+                        {a}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Kategori — sadece agent raporunda */}
+          {tab === "agent" && (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Kategori</label>
+              <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[160px] flex-wrap">
+                {selectedCategories.map(c => (
+                  <span key={c} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {c}
+                    <button onClick={()=>toggleCategory(c)}><X className="w-2.5 h-2.5" /></button>
+                  </span>
+                ))}
+                <div className="relative group">
+                  <button className="text-[10px] text-slate-400 hover:text-slate-600">+ ekle</button>
+                  <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px] hidden group-hover:block">
+                    {allCategories.map(c => (
+                      <button key={c} onClick={()=>toggleCategory(c)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 whitespace-nowrap ${selectedCategories.includes(c)?"font-semibold text-indigo-600":""}`}>
+                        {c}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Grup — tüm tablarda */}
           <div className="flex flex-col gap-1">
             <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Grup</label>
             <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[200px] flex-wrap">
