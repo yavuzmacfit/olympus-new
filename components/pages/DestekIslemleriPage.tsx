@@ -368,9 +368,9 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
       t.escalated ? "Evet" : "Hayır",
     ]);
   } else if (tab === "agent") {
-    headers = ["Atanan Agent","Ticket No","Ticket Açılma Tarihi","Kategori","Atanan Kullanıcı Grubu","Çözüm Tarihi","Çözümleme Süresi","Çözümleyen Agent Grubu"];
+    headers = ["Ticket No","Atanan Agent","Ticket Açılma Tarihi","Kategori","Atanan Kullanıcı Grubu","Çözüm Tarihi","Çözümleme Süresi","Çözümleyen Agent Grubu"];
     rows = tickets.map(t => [
-      t.agent, t.id, t.createdAt, t.category, t.group,
+      t.id, t.agent, t.createdAt, t.category, t.group,
       t.resolvedAt ?? "-", t.totalDuration, t.resolvingGroup ?? "-",
     ]);
   } else {
@@ -537,8 +537,8 @@ function AgentRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () =>
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
                 {[
-                  "Atanan Agent",
                   "Ticket No",
+                  "Atanan Agent",
                   "Ticket Açılma Tarihi",
                   "Kategori",
                   "Atanan Kullanıcı Grubu",
@@ -553,8 +553,8 @@ function AgentRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () =>
             <tbody>
               {tickets.map((t, i) => (
                 <tr key={t.id} className={`border-b border-slate-50 hover:bg-slate-50/70 ${i%2===1?"bg-slate-50/30":""}`}>
-                  <td className="px-4 py-3 font-medium text-slate-700">{t.agent}</td>
                   <td className="px-4 py-3 font-mono text-slate-500">{t.id}</td>
+                  <td className="px-4 py-3 font-medium text-slate-700">{t.agent}</td>
                   <td className="px-4 py-3 text-slate-600">{t.createdAt}</td>
                   <td className="px-4 py-3 text-slate-600">{t.category}</td>
                   <td className="px-4 py-3 text-slate-600">{t.group}</td>
