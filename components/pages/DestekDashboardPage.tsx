@@ -123,8 +123,6 @@ export default function DestekDashboardPage() {
   const [period, setPeriod]         = useState<Period>("bugun");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd]     = useState("");
-  const [typeFilter, setTypeFilter] = useState<"Tümü" | "MACFit" | "MAC/One">("Tümü");
-  const [cityFilter, setCityFilter] = useState("Tümü");
   const [clubSearch, setClubSearch] = useState("");
 
   const factor = useMemo(
@@ -143,11 +141,8 @@ export default function DestekDashboardPage() {
     [factor]
   );
 
-  const cities = ["Tümü", ...Array.from(new Set(CLUBS.map(c => c.city))).sort()];
 
   const sorted = [...scaledClubs]
-    .filter(c => typeFilter === "Tümü" || c.type === typeFilter)
-    .filter(c => cityFilter === "Tümü" || c.city === cityFilter)
     .filter(c => !clubSearch || c.name.toLowerCase().includes(clubSearch.toLowerCase()))
     .sort((a, b) => {
       const diff = a[sortKey] - b[sortKey];
@@ -239,21 +234,8 @@ export default function DestekDashboardPage() {
         </div>
       </div>
 
-      {/* ── Filtreler ────────────────────────────────────────── */}
+      {/* ── Arama ────────────────────────────────────────────── */}
       <div className="flex items-center gap-3">
-        <span className="text-xs font-semibold text-slate-500">Filtrele:</span>
-        <div className="flex gap-1">
-          {(["Tümü", "MACFit", "MAC/One"] as const).map(t => (
-            <button key={t} onClick={() => setTypeFilter(t)}
-              className={`px-3 py-1.5 text-xs rounded-lg font-medium transition-colors ${typeFilter === t ? "bg-indigo-600 text-white" : "bg-white border border-slate-200 text-slate-600 hover:bg-slate-50"}`}>
-              {t}
-            </button>
-          ))}
-        </div>
-        <select value={cityFilter} onChange={e => setCityFilter(e.target.value)}
-          className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none cursor-pointer text-slate-600">
-          {cities.map(c => <option key={c}>{c}</option>)}
-        </select>
         <div className="relative ml-auto">
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input
@@ -280,8 +262,6 @@ export default function DestekDashboardPage() {
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
                 <th className="text-left px-4 py-3 font-semibold w-8">#</th>
                 <th className="text-left px-4 py-3 font-semibold">Kulüp</th>
-                <th className="text-left px-4 py-3 font-semibold">Şehir</th>
-                <th className="text-left px-4 py-3 font-semibold">Tür</th>
                 <th className="text-left px-4 py-3 font-semibold cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort("open")}>
                   <div className="flex items-center gap-1">Açık <SortIcon k="open" /></div>
                 </th>
@@ -304,12 +284,6 @@ export default function DestekDashboardPage() {
                 <tr key={club.id} className={`border-b border-slate-50 hover:bg-indigo-50/30 transition-colors ${i % 2 === 1 ? "bg-slate-50/30" : ""}`}>
                   <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">{i + 1}</td>
                   <td className="px-4 py-3 font-semibold text-slate-700">{club.name}</td>
-                  <td className="px-4 py-3 text-slate-500">{club.city}</td>
-                  <td className="px-4 py-3">
-                    <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${club.type === "MACFit" ? "bg-blue-50 text-blue-700" : "bg-purple-50 text-purple-700"}`}>
-                      {club.type}
-                    </span>
-                  </td>
                   <td className="px-4 py-3">
                     <OpenBar value={club.open} max={maxOpen} />
                   </td>
