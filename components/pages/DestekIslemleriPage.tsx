@@ -8,6 +8,13 @@ type Status   = "open" | "pending" | "solved" | "closed";
 type Priority = "low" | "normal" | "high" | "urgent";
 type Group    = "MAC Ürün Yönetimi" | "MAC Teknik Destek" | "MAC Üyelik" | "MAC Finans" | "MAC Tesis";
 
+interface GroupStep {
+  group: Group;
+  agent: string;
+  assignedAt: string;
+  duration: string;
+}
+
 interface Ticket {
   id: string;
   subject: string;
@@ -17,27 +24,134 @@ interface Ticket {
   agent: string;
   createdAt: string;
   updatedAt: string;
-  totalDuration: string; // "X saat Y dakika"
+  totalDuration: string;
   totalMinutes: number;
   groupTransfers: number;
   agentChanges: number;
   reopened: boolean;
   escalated: boolean;
   finalStatus: Status;
+  submitter: string;
+  submitterClub: string;
+  category: string;
+  lifecycle: GroupStep[];
+  resolvedAt?: string;
+  resolvingAgent?: string;
+  resolvingGroup?: Group;
 }
 
 /* ─── Mock veri ─────────────────────────────────────────────── */
 const ALL_TICKETS: Ticket[] = [
-  { id: "#2570671", subject: "Tunalı Çalışma Saatleri",       status: "closed", priority: "normal", group: "MAC Ürün Yönetimi", agent: "Ayşe T.",   createdAt: "01.04.2026 09:00", updatedAt: "08.04.2026 11:30", totalDuration: "161 saat 44 dakika", totalMinutes: 9704, groupTransfers: 0, agentChanges: 0, reopened: false, escalated: true,  finalStatus: "closed" },
-  { id: "#2593138", subject: "Uygulama sorunu",                status: "closed", priority: "high",   group: "MAC Teknik Destek", agent: "Emre K.",   createdAt: "03.04.2026 10:15", updatedAt: "08.04.2026 11:30", totalDuration: "69 saat 32 dakika",  totalMinutes: 4172, groupTransfers: 0, agentChanges: 0, reopened: false, escalated: true,  finalStatus: "closed" },
-  { id: "#2601445", subject: "Ödeme terminali arızası",        status: "closed", priority: "urgent", group: "MAC Teknik Destek", agent: "Can Y.",    createdAt: "04.04.2026 08:30", updatedAt: "07.04.2026 17:00", totalDuration: "80 saat 30 dakika",  totalMinutes: 4830, groupTransfers: 1, agentChanges: 1, reopened: false, escalated: true,  finalStatus: "closed" },
-  { id: "#2612890", subject: "Üye kartı aktivasyon hatası",    status: "solved", priority: "high",   group: "MAC Üyelik",        agent: "Zeynep A.", createdAt: "05.04.2026 14:00", updatedAt: "07.04.2026 10:00", totalDuration: "44 saat 0 dakika",   totalMinutes: 2640, groupTransfers: 0, agentChanges: 0, reopened: false, escalated: false, finalStatus: "solved" },
-  { id: "#2625301", subject: "Kampanya kodu geçersiz",         status: "closed", priority: "normal", group: "MAC Ürün Yönetimi", agent: "Ayşe T.",   createdAt: "06.04.2026 11:00", updatedAt: "08.04.2026 09:00", totalDuration: "46 saat 0 dakika",   totalMinutes: 2760, groupTransfers: 0, agentChanges: 0, reopened: false, escalated: false, finalStatus: "closed" },
-  { id: "#2630112", subject: "Havuz sisteminde arıza",         status: "open",   priority: "urgent", group: "MAC Tesis",         agent: "Can Y.",    createdAt: "07.04.2026 07:00", updatedAt: "08.04.2026 10:00", totalDuration: "27 saat 0 dakika",   totalMinutes: 1620, groupTransfers: 2, agentChanges: 1, reopened: false, escalated: true,  finalStatus: "open"   },
-  { id: "#2631058", subject: "Toplu SMS gönderimi başarısız",  status: "solved", priority: "high",   group: "MAC Teknik Destek", agent: "Emre K.",   createdAt: "07.04.2026 09:30", updatedAt: "08.04.2026 08:00", totalDuration: "22 saat 30 dakika",  totalMinutes: 1350, groupTransfers: 0, agentChanges: 0, reopened: true,  escalated: false, finalStatus: "solved" },
-  { id: "#2632900", subject: "Fatura PDF indirme hatası",      status: "pending",priority: "low",    group: "MAC Finans",        agent: "Zeynep A.", createdAt: "07.04.2026 13:00", updatedAt: "08.04.2026 07:30", totalDuration: "18 saat 30 dakika",  totalMinutes: 1110, groupTransfers: 0, agentChanges: 0, reopened: false, escalated: false, finalStatus: "pending" },
-  { id: "#2633741", subject: "Eğitmen programı güncellenemiyor",status:"open",   priority: "normal", group: "MAC Üyelik",        agent: "-",         createdAt: "08.04.2026 08:00", updatedAt: "08.04.2026 08:00", totalDuration: "3 saat 12 dakika",   totalMinutes: 192,  groupTransfers: 0, agentChanges: 0, reopened: false, escalated: false, finalStatus: "open"   },
-  { id: "#2634002", subject: "Kilit dolap şifre sıfırlama",    status: "solved", priority: "low",    group: "MAC Tesis",         agent: "Can Y.",    createdAt: "08.04.2026 09:00", updatedAt: "08.04.2026 11:00", totalDuration: "2 saat 0 dakika",    totalMinutes: 120,  groupTransfers: 0, agentChanges: 0, reopened: false, escalated: false, finalStatus: "solved" },
+  {
+    id: "#2570671", subject: "Tunalı Çalışma Saatleri", status: "closed", priority: "normal",
+    group: "MAC Ürün Yönetimi", agent: "Ayşe T.", createdAt: "01.04.2026 09:00", updatedAt: "08.04.2026 11:30",
+    totalDuration: "161 saat 44 dakika", totalMinutes: 9704, groupTransfers: 0, agentChanges: 0,
+    reopened: false, escalated: true, finalStatus: "closed",
+    submitter: "Mehmet Yılmaz", submitterClub: "Tunalı", category: "Operasyon",
+    lifecycle: [
+      { group: "MAC Ürün Yönetimi", agent: "Ayşe T.", assignedAt: "01.04.2026 09:15", duration: "161 saat 44 dakika" },
+    ],
+    resolvedAt: "08.04.2026 10:44", resolvingAgent: "Ayşe T.", resolvingGroup: "MAC Ürün Yönetimi",
+  },
+  {
+    id: "#2593138", subject: "Uygulama sorunu", status: "closed", priority: "high",
+    group: "MAC Teknik Destek", agent: "Emre K.", createdAt: "03.04.2026 10:15", updatedAt: "08.04.2026 11:30",
+    totalDuration: "69 saat 32 dakika", totalMinutes: 4172, groupTransfers: 0, agentChanges: 0,
+    reopened: false, escalated: true, finalStatus: "closed",
+    submitter: "Selin Çelik", submitterClub: "Ankamall", category: "Teknik",
+    lifecycle: [
+      { group: "MAC Teknik Destek", agent: "Emre K.", assignedAt: "03.04.2026 10:30", duration: "69 saat 32 dakika" },
+    ],
+    resolvedAt: "08.04.2026 08:02", resolvingAgent: "Emre K.", resolvingGroup: "MAC Teknik Destek",
+  },
+  {
+    id: "#2601445", subject: "Ödeme terminali arızası", status: "closed", priority: "urgent",
+    group: "MAC Teknik Destek", agent: "Can Y.", createdAt: "04.04.2026 08:30", updatedAt: "07.04.2026 17:00",
+    totalDuration: "80 saat 30 dakika", totalMinutes: 4830, groupTransfers: 1, agentChanges: 1,
+    reopened: false, escalated: true, finalStatus: "closed",
+    submitter: "Ali Kaya", submitterClub: "Mall of Istanbul", category: "Teknik",
+    lifecycle: [
+      { group: "MAC Tesis",         agent: "Fatma S.", assignedAt: "04.04.2026 08:45", duration: "12 saat 15 dakika" },
+      { group: "MAC Teknik Destek", agent: "Can Y.",   assignedAt: "04.04.2026 21:00", duration: "68 saat 15 dakika" },
+    ],
+    resolvedAt: "07.04.2026 17:00", resolvingAgent: "Can Y.", resolvingGroup: "MAC Teknik Destek",
+  },
+  {
+    id: "#2612890", subject: "Üye kartı aktivasyon hatası", status: "solved", priority: "high",
+    group: "MAC Üyelik", agent: "Zeynep A.", createdAt: "05.04.2026 14:00", updatedAt: "07.04.2026 10:00",
+    totalDuration: "44 saat 0 dakika", totalMinutes: 2640, groupTransfers: 0, agentChanges: 0,
+    reopened: false, escalated: false, finalStatus: "solved",
+    submitter: "Derya Arslan", submitterClub: "Kartal", category: "Üyelik",
+    lifecycle: [
+      { group: "MAC Üyelik", agent: "Zeynep A.", assignedAt: "05.04.2026 14:20", duration: "44 saat 0 dakika" },
+    ],
+    resolvedAt: "07.04.2026 10:20", resolvingAgent: "Zeynep A.", resolvingGroup: "MAC Üyelik",
+  },
+  {
+    id: "#2625301", subject: "Kampanya kodu geçersiz", status: "closed", priority: "normal",
+    group: "MAC Ürün Yönetimi", agent: "Ayşe T.", createdAt: "06.04.2026 11:00", updatedAt: "08.04.2026 09:00",
+    totalDuration: "46 saat 0 dakika", totalMinutes: 2760, groupTransfers: 0, agentChanges: 0,
+    reopened: false, escalated: false, finalStatus: "closed",
+    submitter: "Burak Öztürk", submitterClub: "Akbatı", category: "Kampanya",
+    lifecycle: [
+      { group: "MAC Ürün Yönetimi", agent: "Ayşe T.", assignedAt: "06.04.2026 11:30", duration: "46 saat 0 dakika" },
+    ],
+    resolvedAt: "08.04.2026 09:30", resolvingAgent: "Ayşe T.", resolvingGroup: "MAC Ürün Yönetimi",
+  },
+  {
+    id: "#2630112", subject: "Havuz sisteminde arıza", status: "open", priority: "urgent",
+    group: "MAC Tesis", agent: "Can Y.", createdAt: "07.04.2026 07:00", updatedAt: "08.04.2026 10:00",
+    totalDuration: "27 saat 0 dakika", totalMinutes: 1620, groupTransfers: 2, agentChanges: 1,
+    reopened: false, escalated: true, finalStatus: "open",
+    submitter: "Hasan Demir", submitterClub: "Buyaka", category: "Tesis",
+    lifecycle: [
+      { group: "MAC Tesis",         agent: "Fatma S.", assignedAt: "07.04.2026 07:15", duration: "5 saat 45 dakika" },
+      { group: "MAC Teknik Destek", agent: "Emre K.",  assignedAt: "07.04.2026 13:00", duration: "8 saat 0 dakika"  },
+      { group: "MAC Tesis",         agent: "Can Y.",   assignedAt: "07.04.2026 21:00", duration: "13 saat 0 dakika" },
+    ],
+  },
+  {
+    id: "#2631058", subject: "Toplu SMS gönderimi başarısız", status: "solved", priority: "high",
+    group: "MAC Teknik Destek", agent: "Emre K.", createdAt: "07.04.2026 09:30", updatedAt: "08.04.2026 08:00",
+    totalDuration: "22 saat 30 dakika", totalMinutes: 1350, groupTransfers: 0, agentChanges: 0,
+    reopened: true, escalated: false, finalStatus: "solved",
+    submitter: "Canan Yıldız", submitterClub: "Kanyon", category: "Bildirim",
+    lifecycle: [
+      { group: "MAC Teknik Destek", agent: "Emre K.", assignedAt: "07.04.2026 09:45", duration: "22 saat 30 dakika" },
+    ],
+    resolvedAt: "08.04.2026 08:15", resolvingAgent: "Emre K.", resolvingGroup: "MAC Teknik Destek",
+  },
+  {
+    id: "#2632900", subject: "Fatura PDF indirme hatası", status: "pending", priority: "low",
+    group: "MAC Finans", agent: "Zeynep A.", createdAt: "07.04.2026 13:00", updatedAt: "08.04.2026 07:30",
+    totalDuration: "18 saat 30 dakika", totalMinutes: 1110, groupTransfers: 0, agentChanges: 0,
+    reopened: false, escalated: false, finalStatus: "pending",
+    submitter: "Tuba Şahin", submitterClub: "Fulya", category: "Finans",
+    lifecycle: [
+      { group: "MAC Finans", agent: "Zeynep A.", assignedAt: "07.04.2026 13:20", duration: "18 saat 30 dakika" },
+    ],
+  },
+  {
+    id: "#2633741", subject: "Eğitmen programı güncellenemiyor", status: "open", priority: "normal",
+    group: "MAC Üyelik", agent: "-", createdAt: "08.04.2026 08:00", updatedAt: "08.04.2026 08:00",
+    totalDuration: "3 saat 12 dakika", totalMinutes: 192, groupTransfers: 0, agentChanges: 0,
+    reopened: false, escalated: false, finalStatus: "open",
+    submitter: "Orhan Çetin", submitterClub: "Armada", category: "Operasyon",
+    lifecycle: [
+      { group: "MAC Üyelik", agent: "-", assignedAt: "08.04.2026 08:00", duration: "3 saat 12 dakika" },
+    ],
+  },
+  {
+    id: "#2634002", subject: "Kilit dolap şifre sıfırlama", status: "solved", priority: "low",
+    group: "MAC Tesis", agent: "Can Y.", createdAt: "08.04.2026 09:00", updatedAt: "08.04.2026 11:00",
+    totalDuration: "2 saat 0 dakika", totalMinutes: 120, groupTransfers: 0, agentChanges: 0,
+    reopened: false, escalated: false, finalStatus: "solved",
+    submitter: "Nurcan Aydın", submitterClub: "Vialand", category: "Tesis",
+    lifecycle: [
+      { group: "MAC Tesis", agent: "Can Y.", assignedAt: "08.04.2026 09:10", duration: "2 saat 0 dakika" },
+    ],
+    resolvedAt: "08.04.2026 11:10", resolvingAgent: "Can Y.", resolvingGroup: "MAC Tesis",
+  },
 ];
 
 const GROUPS: Group[] = ["MAC Ürün Yönetimi", "MAC Teknik Destek", "MAC Üyelik", "MAC Finans", "MAC Tesis"];
@@ -50,6 +164,114 @@ const STATUS_COLORS: Record<Status, string> = {
 };
 
 type TabKey = "ham" | "agent" | "sla";
+
+/* ─── Ticket Detay Drawer ────────────────────────────────────── */
+function TicketDrawer({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
+  return (
+    <>
+      {/* Overlay */}
+      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+
+      {/* Panel */}
+      <div className="fixed right-0 top-0 h-full w-[520px] bg-white shadow-2xl z-50 flex flex-col overflow-hidden">
+
+        {/* Header */}
+        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+          <div>
+            <p className="text-xs text-slate-400 font-mono mb-0.5">{ticket.id}</p>
+            <p className="text-sm font-bold text-slate-800 leading-snug">{ticket.subject}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors mt-0.5">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
+
+          {/* Temel bilgiler */}
+          <div className="bg-slate-50 rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
+            {[
+              ["Ticket No",          ticket.id],
+              ["Açılma Tarihi",      ticket.createdAt],
+              ["Submitter",          ticket.submitter],
+              ["Submitter Kulübü",   ticket.submitterClub],
+              ["Kategori",           ticket.category],
+              ["Toplam Süre",        ticket.totalDuration],
+            ].map(([label, val]) => (
+              <div key={label}>
+                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
+                <p className="font-medium text-slate-700">{val}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Lifecycle */}
+          <div>
+            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Grup & Agent Geçmişi</p>
+            <div className="flex flex-col gap-3">
+              {ticket.lifecycle.map((step, i) => (
+                <div key={i} className="relative flex gap-3">
+                  {/* Timeline çizgisi */}
+                  <div className="flex flex-col items-center shrink-0">
+                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                      {i + 1}
+                    </div>
+                    {i < ticket.lifecycle.length - 1 && (
+                      <div className="w-px flex-1 bg-slate-200 my-1" />
+                    )}
+                  </div>
+
+                  {/* İçerik */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-3 flex-1 mb-1">
+                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanan Grup</p>
+                        <p className="font-semibold text-slate-700">{step.group}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanan Agent</p>
+                        <p className="font-semibold text-slate-700">{step.agent}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanma Tarihi</p>
+                        <p className="text-slate-600">{step.assignedAt}</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Grupta Geçen Süre</p>
+                        <p className="text-slate-600">{step.duration}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Çözüm bilgileri */}
+          {ticket.resolvedAt && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+              <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">Çözüm Bilgileri</p>
+              <div className="grid grid-cols-3 gap-4 text-xs">
+                <div>
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözüm Tarihi</p>
+                  <p className="font-semibold text-slate-700">{ticket.resolvedAt}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözümleyen Agent</p>
+                  <p className="font-semibold text-slate-700">{ticket.resolvingAgent}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözümleyen Grup</p>
+                  <p className="font-semibold text-slate-700">{ticket.resolvingGroup}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
 
 /* ─── CSV export ─────────────────────────────────────────────── */
 function exportCSV(tickets: Ticket[], tab: TabKey) {
@@ -116,6 +338,7 @@ function MetricCard({ label, value, sub, color = "text-slate-800" }: { label: st
 /* ─── Ham Rapor sekmesi ─────────────────────────────────────── */
 function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => void }) {
   const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<Ticket | null>(null);
   const filtered = tickets.filter(t =>
     t.subject.toLowerCase().includes(search.toLowerCase()) ||
     t.id.toLowerCase().includes(search.toLowerCase())
@@ -169,16 +392,23 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
           <table className="w-full text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
-                {["Ticket ID","Konu","Durum","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Eskalasyon"].map(h => (
+                {["Ticket ID","Konu","Kategori","Durum","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Eskalasyon"].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {filtered.map((t, i) => (
-                <tr key={t.id} className={`border-b border-slate-50 hover:bg-slate-50/70 transition-colors ${i%2===1?"bg-slate-50/30":""}`}>
+                <tr
+                  key={t.id}
+                  onClick={() => setSelected(t)}
+                  className={`border-b border-slate-50 hover:bg-indigo-50/40 cursor-pointer transition-colors ${i%2===1?"bg-slate-50/30":""} ${selected?.id===t.id?"bg-indigo-50":""}` }
+                >
                   <td className="px-4 py-3 font-mono text-slate-500">{t.id}</td>
                   <td className="px-4 py-3 font-medium text-slate-700 max-w-[200px] truncate">{t.subject}</td>
+                  <td className="px-4 py-3">
+                    <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">{t.category}</span>
+                  </td>
                   <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
                   <td className="px-4 py-3 text-slate-500">{t.updatedAt}</td>
                   <td className="px-4 py-3 text-slate-600">{t.totalDuration}</td>
@@ -190,12 +420,13 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-400">Sonuç bulunamadı</td></tr>
+                <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-400">Sonuç bulunamadı</td></tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+      {selected && <TicketDrawer ticket={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }
