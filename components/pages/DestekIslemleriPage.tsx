@@ -287,16 +287,12 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
       t.escalated ? "Evet" : "Hayır",
     ]);
   } else if (tab === "agent") {
-    headers = ["Agent","Ticket Sayısı","Ort. Çözüm Süresi (dk)","Çözülen","Kapatılan","Eskalasyon"];
-    const agentMap: Record<string, Ticket[]> = {};
-    tickets.forEach(t => { (agentMap[t.agent] = agentMap[t.agent] || []).push(t); });
-    rows = Object.entries(agentMap).map(([agent, ts]) => [
-      agent,
-      String(ts.length),
-      String(Math.round(ts.reduce((s,t) => s + t.totalMinutes, 0) / ts.length)),
-      String(ts.filter(t => t.status === "solved").length),
-      String(ts.filter(t => t.status === "closed").length),
-      String(ts.filter(t => t.escalated).length),
+    headers = ["Atanan Agent","Ticket No","Ticket Açılma Tarihi","Kategori","Atanan Kullanıcı Grubu","Atanma Tarihi ve Saati","Çözümleyen Agent","Çözüm Tarihi","Çözümleme Süresi","Çözümleyen Agent Grubu"];
+    rows = tickets.map(t => [
+      t.agent, t.id, t.createdAt, t.category, t.group,
+      t.lifecycle[0]?.assignedAt ?? "-",
+      t.resolvingAgent ?? "-", t.resolvedAt ?? "-", t.totalDuration,
+      t.resolvingGroup ?? "-",
     ]);
   } else {
     headers = ["Grup","Toplam Atanan Ticket","Zamanında Kapatılan","Geciktirilen","Ort. Bekleme Süresi","Ort. Çözüm Süresi (dk)","SLA %"];
@@ -440,55 +436,61 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
 
 /* ─── Agent Raporu sekmesi ───────────────────────────────────── */
 function AgentRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () => void }) {
-  const agentMap: Record<string, Ticket[]> = {};
-  tickets.forEach(t => { (agentMap[t.agent] = agentMap[t.agent] || []).push(t); });
-  const agents = Object.entries(agentMap).map(([agent, ts]) => ({
-    agent,
-    count: ts.length,
-    avgMinutes: Math.round(ts.reduce((s,t) => s+t.totalMinutes, 0) / ts.length),
-    solved: ts.filter(t=>t.status==="solved").length,
-    closed: ts.filter(t=>t.status==="closed").length,
-    escalated: ts.filter(t=>t.escalated).length,
-  })).sort((a,b) => b.count - a.count);
+  const uniqueAgents = [...new Set(tickets.map(t => t.agent).filter(a => a !== "-"))].length;
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-y-auto p-6">
       <div className="grid grid-cols-3 gap-3">
-        <MetricCard label="Aktif Agent" value={Object.keys(agentMap).filter(a=>a!=="-").length} sub="filtredeki ticketlar" />
-        <MetricCard label="Ort. Ticket / Agent" value={(tickets.length / Math.max(Object.keys(agentMap).filter(a=>a!=="-").length,1)).toFixed(1)} sub="dağılım" />
-        <MetricCard label="Eskalasyon Oranı" value={`%${tickets.length ? Math.round(tickets.filter(t=>t.escalated).length/tickets.length*100) : 0}`} sub="filtredeki ticketlar" color="text-red-500" />
+        <MetricCard label="Toplam Ticket" value={tickets.length} sub="filtredeki ticketlar" />
+        <MetricCard label="Aktif Agent" value={uniqueAgents} sub="atanan agent sayısı" />
+        <MetricCard label="Çözümlenen" value={tickets.filter(t=>t.resolvedAt).length} sub="çözüm tarihi olan" color="text-emerald-600" />
       </div>
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-          <p className="text-sm font-bold text-slate-700">Agent Performansı</p>
+          <p className="text-sm font-bold text-slate-700">Agent Raporu</p>
           <button onClick={onExport} className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
             <Download className="w-3.5 h-3.5" /> Agent Raporunu Dışa Aktar
           </button>
         </div>
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
-              {["Agent","Ticket Sayısı","Ort. Çözüm Süresi","Çözülen","Kapatılan","Eskalasyon"].map(h=>(
-                <th key={h} className="text-left px-5 py-3 font-semibold">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {agents.map((row,i) => (
-              <tr key={row.agent} className={`border-b border-slate-50 hover:bg-slate-50/70 ${i%2===1?"bg-slate-50/30":""}`}>
-                <td className="px-5 py-3 font-medium text-slate-700">{row.agent}</td>
-                <td className="px-5 py-3 text-slate-600">{row.count}</td>
-                <td className="px-5 py-3 text-slate-600">{Math.floor(row.avgMinutes/60)} saat {row.avgMinutes%60} dk</td>
-                <td className="px-5 py-3 text-emerald-600 font-medium">{row.solved}</td>
-                <td className="px-5 py-3 text-slate-500">{row.closed}</td>
-                <td className="px-5 py-3">
-                  <span className={`font-medium ${row.escalated > 0 ? "text-red-500" : "text-slate-400"}`}>{row.escalated}</span>
-                </td>
+        <div className="overflow-x-auto">
+          <table className="w-full text-xs whitespace-nowrap">
+            <thead>
+              <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
+                {[
+                  "Atanan Agent",
+                  "Ticket No",
+                  "Ticket Açılma Tarihi",
+                  "Kategori",
+                  "Atanan Kullanıcı Grubu",
+                  "Atanma Tarihi ve Saati",
+                  "Çözümleyen Agent",
+                  "Çözüm Tarihi",
+                  "Çözümleme Süresi",
+                  "Çözümleyen Agent Grubu",
+                ].map(h => (
+                  <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
+                ))}
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {tickets.map((t, i) => (
+                <tr key={t.id} className={`border-b border-slate-50 hover:bg-slate-50/70 ${i%2===1?"bg-slate-50/30":""}`}>
+                  <td className="px-4 py-3 font-medium text-slate-700">{t.agent}</td>
+                  <td className="px-4 py-3 font-mono text-slate-500">{t.id}</td>
+                  <td className="px-4 py-3 text-slate-600">{t.createdAt}</td>
+                  <td className="px-4 py-3 text-slate-600">{t.category}</td>
+                  <td className="px-4 py-3 text-slate-600">{t.group}</td>
+                  <td className="px-4 py-3 text-slate-600">{t.lifecycle[0]?.assignedAt ?? "-"}</td>
+                  <td className="px-4 py-3 text-slate-700">{t.resolvingAgent ?? "-"}</td>
+                  <td className="px-4 py-3 text-slate-600">{t.resolvedAt ?? "-"}</td>
+                  <td className="px-4 py-3 text-slate-600">{t.totalDuration}</td>
+                  <td className="px-4 py-3 text-slate-600">{t.resolvingGroup ?? "-"}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
