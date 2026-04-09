@@ -726,8 +726,8 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
             </div>
           )}
 
-          {/* Kategori — sadece agent raporunda */}
-          {tab === "agent" && (
+          {/* Kategori — agent ve sla raporunda */}
+          {(tab === "agent" || tab === "sla") && (
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Kategori</label>
               <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[160px] flex-wrap">
