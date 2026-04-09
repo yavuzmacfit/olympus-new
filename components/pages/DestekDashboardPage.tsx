@@ -127,6 +127,8 @@ export default function DestekDashboardPage() {
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd]     = useState("");
   const [clubSearch, setClubSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 10;
 
   const factor = useMemo(
     () => periodFactor(period, customStart, customEnd),
@@ -154,7 +156,10 @@ export default function DestekDashboardPage() {
       return sortDir === "desc" ? -diff : diff;
     });
 
-  const maxOpen = Math.max(...sorted.map(c => c.open), 1);
+  const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE));
+  const safePage   = Math.min(page, totalPages);
+  const paged      = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const maxOpen    = Math.max(...sorted.map(c => c.open), 1);
 
   const totalOpen    = scaledClubs.reduce((s, c) => s + c.open, 0);
   const totalClosed  = scaledClubs.reduce((s, c) => s + c.closed, 0);
@@ -168,6 +173,7 @@ export default function DestekDashboardPage() {
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "desc" ? "asc" : "desc");
     else { setSortKey(key); setSortDir("desc"); }
+    setPage(1);
   };
 
   const SortIcon = ({ k }: { k: SortKey }) => {
@@ -245,7 +251,7 @@ export default function DestekDashboardPage() {
           <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
           <input
             value={clubSearch}
-            onChange={e => setClubSearch(e.target.value)}
+            onChange={e => { setClubSearch(e.target.value); setPage(1); }}
             placeholder="Kulüp ara..."
             className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 w-44"
           />
@@ -291,9 +297,9 @@ export default function DestekDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {sorted.map((club, i) => (
+              {paged.map((club, i) => (
                 <tr key={club.id} className={`border-b border-slate-50 hover:bg-indigo-50/30 transition-colors ${i % 2 === 1 ? "bg-slate-50/30" : ""}`}>
-                  <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">{i + 1}</td>
+                  <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">{(safePage - 1) * PAGE_SIZE + i + 1}</td>
                   <td className="px-4 py-3 font-semibold text-slate-700">{club.name}</td>
                   <td className="px-4 py-3">
                     <OpenBar value={club.open} max={maxOpen} />
@@ -315,6 +321,55 @@ export default function DestekDashboardPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
+            <span className="text-xs text-slate-400">
+              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} / {sorted.length} kulüp
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage(1)}
+                disabled={safePage === 1}
+                className="px-2 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >«</button>
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={safePage === 1}
+                className="px-2.5 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >‹</button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(n => n === 1 || n === totalPages || Math.abs(n - safePage) <= 1)
+                .reduce<(number | "...")[]>((acc, n, idx, arr) => {
+                  if (idx > 0 && n - (arr[idx - 1] as number) > 1) acc.push("...");
+                  acc.push(n);
+                  return acc;
+                }, [])
+                .map((n, idx) =>
+                  n === "..." ? (
+                    <span key={`ellipsis-${idx}`} className="px-1 text-xs text-slate-400">…</span>
+                  ) : (
+                    <button
+                      key={n}
+                      onClick={() => setPage(n as number)}
+                      className={`px-2.5 py-1 text-xs rounded border transition-colors ${safePage === n ? "bg-[#CD3638] border-[#CD3638] text-white font-semibold" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
+                    >{n}</button>
+                  )
+                )}
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={safePage === totalPages}
+                className="px-2.5 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >›</button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={safePage === totalPages}
+                className="px-2 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              >»</button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );
