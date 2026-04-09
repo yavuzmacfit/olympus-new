@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { X, Download, Search } from "lucide-react";
 
 /* ─── Tipler ─────────────────────────────────────────────────── */
@@ -248,13 +248,19 @@ function CheckboxDropdown({
 
 /* ─── Ticket Detay Drawer ────────────────────────────────────── */
 function TicketDrawer({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
+  const [visible, setVisible] = useState(false);
+  useEffect(() => { const id = requestAnimationFrame(() => setVisible(true)); return () => cancelAnimationFrame(id); }, []);
+
   return (
     <>
       {/* Overlay */}
-      <div className="fixed inset-0 bg-black/20 z-40" onClick={onClose} />
+      <div
+        className={`absolute inset-0 bg-black/20 z-40 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
+        onClick={onClose}
+      />
 
       {/* Panel */}
-      <div className="fixed right-0 top-0 h-full w-[520px] bg-white shadow-2xl z-50 flex flex-col overflow-hidden">
+      <div className={`absolute right-0 top-0 h-full w-[480px] bg-white shadow-2xl z-50 flex flex-col overflow-hidden transition-transform duration-300 ${visible ? "translate-x-0" : "translate-x-full"}`}>
 
         {/* Header */}
         <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100 shrink-0">
@@ -432,7 +438,7 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
   const avgTransfers = tickets.length ? (tickets.reduce((s,t) => s + t.groupTransfers, 0) / tickets.length).toFixed(1) : "0";
 
   return (
-    <div className="flex flex-col gap-4 h-full overflow-y-auto p-6">
+    <div className="relative flex flex-col gap-4 h-full overflow-y-auto p-6">
       {/* Metrik kartlar */}
       <div className="grid grid-cols-7 gap-3">
         <MetricCard label="Toplam Ticket" value={tickets.length} sub="filtreyle eşleşen" />
