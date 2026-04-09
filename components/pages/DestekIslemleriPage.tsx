@@ -172,6 +172,80 @@ const STATUS_COLORS: Record<Status, string> = {
 
 type TabKey = "ham" | "agent" | "sla";
 
+/* ─── Checkbox Dropdown ──────────────────────────────────────── */
+function CheckboxDropdown({
+  label, options, selected, onToggle, onClear,
+}: {
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (v: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const filtered = options.filter(o => o.toLowerCase().includes(search.toLowerCase()));
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">{label}</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(p => !p)}
+          className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 hover:bg-white min-w-[200px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          <span className={selected.length ? "text-slate-700 font-medium" : "text-slate-400"}>
+            {selected.length === 0 ? "Tümü" : selected.length === 1 ? selected[0] : `${selected.length} kategori seçildi`}
+          </span>
+          <svg className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform ${open?"rotate-180":""}`} viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/></svg>
+        </button>
+
+        {open && (
+          <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-xl w-64">
+            {/* Arama */}
+            <div className="p-2 border-b border-slate-100">
+              <input
+                autoFocus
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Kategori ara..."
+                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              />
+            </div>
+
+            {/* Liste */}
+            <div className="max-h-56 overflow-y-auto py-1">
+              {filtered.length === 0 && (
+                <p className="px-3 py-2 text-xs text-slate-400">Sonuç bulunamadı</p>
+              )}
+              {filtered.map(o => (
+                <label key={o} className="flex items-center gap-2.5 px-3 py-2 hover:bg-slate-50 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(o)}
+                    onChange={() => onToggle(o)}
+                    className="accent-indigo-600 w-3.5 h-3.5 shrink-0"
+                  />
+                  <span className="text-xs text-slate-700 whitespace-nowrap">{o}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Alt bar */}
+            <div className="flex items-center justify-between px-3 py-2 border-t border-slate-100">
+              <span className="text-[10px] text-slate-400">{selected.length} seçili</span>
+              <button onClick={() => { onClear(); setSearch(""); }} className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium">
+                Temizle
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /* ─── Ticket Detay Drawer ────────────────────────────────────── */
 function TicketDrawer({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
   return (
@@ -728,28 +802,13 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
 
           {/* Kategori — agent ve sla raporunda */}
           {(tab === "agent" || tab === "sla") && (
-            <div className="flex flex-col gap-1">
-              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Kategori</label>
-              <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[160px] flex-wrap">
-                {selectedCategories.map(c => (
-                  <span key={c} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap">
-                    {c}
-                    <button onClick={()=>toggleCategory(c)}><X className="w-2.5 h-2.5" /></button>
-                  </span>
-                ))}
-                <div className="relative group">
-                  <button className="text-[10px] text-slate-400 hover:text-slate-600">+ ekle</button>
-                  <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20 min-w-[140px] hidden group-hover:block">
-                    {allCategories.map(c => (
-                      <button key={c} onClick={()=>toggleCategory(c)}
-                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 whitespace-nowrap ${selectedCategories.includes(c)?"font-semibold text-indigo-600":""}`}>
-                        {c}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+            <CheckboxDropdown
+              label="Kategori"
+              options={allCategories}
+              selected={selectedCategories}
+              onToggle={toggleCategory}
+              onClear={() => setSelectedCategories([])}
+            />
           )}
 
           {/* Grup — tüm tablarda */}
