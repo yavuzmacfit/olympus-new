@@ -57,14 +57,12 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
   let rows: string[][];
 
   if (tab === "ham") {
-    headers = ["Ticket ID","Konu","Durum","Öncelik","Grup","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Yeniden Açıldı","Eskalasyon","Final Durum"];
+    headers = ["Ticket ID","Konu","Durum","Öncelik","Grup","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Eskalasyon"];
     rows = tickets.map(t => [
       t.id, t.subject, STATUS_LABELS[t.status], t.priority,
       t.group, t.updatedAt, t.totalDuration,
       String(t.groupTransfers), String(t.agentChanges),
-      t.reopened ? "Evet" : "Hayır",
       t.escalated ? "Evet" : "Hayır",
-      STATUS_LABELS[t.finalStatus],
     ]);
   } else if (tab === "agent") {
     headers = ["Agent","Ticket Sayısı","Ort. Çözüm Süresi (dk)","Çözülen","Kapatılan","Eskalasyon"];
@@ -171,7 +169,7 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
           <table className="w-full text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
-                {["Ticket ID","Konu","Durum","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Yeniden Açıldı","Eskalasyon","Final Durum"].map(h => (
+                {["Ticket ID","Konu","Durum","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Eskalasyon"].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
                 ))}
               </tr>
@@ -187,16 +185,12 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
                   <td className="px-4 py-3 text-center text-slate-600">{t.groupTransfers}</td>
                   <td className="px-4 py-3 text-center text-slate-600">{t.agentChanges}</td>
                   <td className="px-4 py-3 text-center">
-                    <span className={`text-[11px] font-medium ${t.reopened ? "text-amber-600":"text-slate-400"}`}>{t.reopened?"Evet":"Hayır"}</span>
-                  </td>
-                  <td className="px-4 py-3 text-center">
                     <span className={`text-[11px] font-medium ${t.escalated ? "text-red-500":"text-slate-400"}`}>{t.escalated?"Evet":"Hayır"}</span>
                   </td>
-                  <td className="px-4 py-3"><StatusBadge status={t.finalStatus} /></td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={10} className="px-4 py-10 text-center text-slate-400">Sonuç bulunamadı</td></tr>
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-400">Sonuç bulunamadı</td></tr>
               )}
             </tbody>
           </table>
