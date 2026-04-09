@@ -11,6 +11,7 @@ import TahsilatIslemleriPage from "@/components/pages/TahsilatIslemleriPage";
 import KulupIslemleriPage from "@/components/pages/KulupIslemleriPage";
 import AktiviteIslemleriPage from "@/components/pages/AktiviteIslemleriPage";
 import DestekIslemleriPage from "@/components/pages/DestekIslemleriPage";
+import DestekDashboardPage from "@/components/pages/DestekDashboardPage";
 
 interface Tab { id: string; title: string; icon: React.ElementType; }
 
@@ -65,7 +66,7 @@ export default function Page() {
   const [activeView, setActiveView] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [kulupSubPage, setKulupSubPage] = useState("aktivite-takvimi");
-  const [destekSubPage, setDestekSubPage] = useState("ham-rapor");
+  const [destekSubPage, setDestekSubPage] = useState("dashboard");
   const [clubMenuOpen, setClubMenuOpen] = useState(false);
 
   // Drag state — use refs to avoid stale closures in pointer handlers
@@ -407,7 +408,8 @@ export default function Page() {
                   {tab.id === "tahsilat-islemleri" && <TahsilatIslemleriPage />}
                   {tab.id === "kulup-islemleri"    && <KulupIslemleriPage activeSubId={kulupSubPage} />}
                   {tab.id === "aktivite-islemleri" && <AktiviteIslemleriPage />}
-                  {tab.id === "destek-islemleri"   && <DestekIslemleriPage activeSubId={destekSubPage} />}
+                  {tab.id === "destek-islemleri"   && destekSubPage === "dashboard" && <DestekDashboardPage />}
+                  {tab.id === "destek-islemleri"   && destekSubPage !== "dashboard" && <DestekIslemleriPage activeSubId={destekSubPage} />}
                 </div>
               ))}
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Home, BarChart2, Users, Calendar, ChevronUp, ChevronDown, ChevronLeft, Bookmark, Percent, Ticket, List, Landmark, UserPlus, Snowflake, Banknote, Dumbbell, CalendarDays, Users2, BookOpen, Package, Headphones, BarChart3, Building2 } from "lucide-react";
+import { Home, BarChart2, Users, Calendar, ChevronUp, ChevronDown, ChevronLeft, Bookmark, Percent, Ticket, List, Landmark, UserPlus, Snowflake, Banknote, Dumbbell, CalendarDays, Users2, BookOpen, Package, Headphones, BarChart3, Building2, LayoutDashboard } from "lucide-react";
 
 interface NavItem {
   icon: React.ElementType;
@@ -57,6 +57,7 @@ const navItemsByModule: Record<string, NavItem[]> = {
   ],
   "destek-islemleri": [
     { icon: Home, label: "Anasayfa", id: "home" },
+    { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
     { icon: Headphones, label: "Ham Rapor", id: "ham-rapor" },
     { icon: Users2, label: "Agent Raporu", id: "agent-raporu" },
     { icon: BarChart3, label: "SLA Raporu", id: "sla-raporu" },
