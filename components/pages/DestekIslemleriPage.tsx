@@ -246,117 +246,106 @@ function CheckboxDropdown({
   );
 }
 
-/* ─── Ticket Detay Drawer ────────────────────────────────────── */
-function TicketDrawer({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
+/* ─── Ticket Detay Paneli (split-view, no overlay) ──────────── */
+function TicketDetailPanel({ ticket, onClose }: { ticket: Ticket; onClose: () => void }) {
   const [visible, setVisible] = useState(false);
   useEffect(() => { const id = requestAnimationFrame(() => setVisible(true)); return () => cancelAnimationFrame(id); }, []);
 
   return (
-    <>
-      {/* Overlay */}
-      <div
-        className={`absolute inset-0 bg-black/20 z-40 transition-opacity duration-300 ${visible ? "opacity-100" : "opacity-0"}`}
-        onClick={onClose}
-      />
+    <div
+      className={`border-l border-slate-200 bg-white flex flex-col shrink-0 overflow-hidden transition-all duration-300 ${visible ? "w-[440px] opacity-100" : "w-0 opacity-0"}`}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between px-5 py-4 border-b border-slate-100 shrink-0">
+        <div className="min-w-0">
+          <p className="text-xs text-slate-400 font-mono mb-0.5">{ticket.id}</p>
+          <p className="text-sm font-bold text-slate-800 leading-snug truncate">{ticket.subject}</p>
+        </div>
+        <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors mt-0.5 ml-3 shrink-0">
+          <X className="w-4 h-4" />
+        </button>
+      </div>
 
-      {/* Panel */}
-      <div className={`absolute right-0 top-0 h-full w-[480px] bg-white shadow-2xl z-50 flex flex-col overflow-hidden transition-transform duration-300 ${visible ? "translate-x-0" : "translate-x-full"}`}>
+      <div className="flex-1 overflow-y-auto p-5 flex flex-col gap-5">
 
-        {/* Header */}
-        <div className="flex items-start justify-between px-6 py-4 border-b border-slate-100 shrink-0">
-          <div>
-            <p className="text-xs text-slate-400 font-mono mb-0.5">{ticket.id}</p>
-            <p className="text-sm font-bold text-slate-800 leading-snug">{ticket.subject}</p>
-          </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 transition-colors mt-0.5">
-            <X className="w-4 h-4" />
-          </button>
+        {/* Temel bilgiler */}
+        <div className="bg-slate-50 rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
+          {[
+            ["Ticket No",          ticket.id],
+            ["Açılma Tarihi",      ticket.createdAt],
+            ["Submitter",          ticket.submitter],
+            ["Submitter Kulübü",   ticket.submitterClub],
+            ["Kategori",           ticket.category],
+            ["Toplam Süre",        ticket.totalDuration],
+          ].map(([label, val]) => (
+            <div key={label}>
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
+              <p className="font-medium text-slate-700">{val}</p>
+            </div>
+          ))}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-6 flex flex-col gap-5">
-
-          {/* Temel bilgiler */}
-          <div className="bg-slate-50 rounded-xl p-4 grid grid-cols-2 gap-x-6 gap-y-3 text-xs">
-            {[
-              ["Ticket No",          ticket.id],
-              ["Açılma Tarihi",      ticket.createdAt],
-              ["Submitter",          ticket.submitter],
-              ["Submitter Kulübü",   ticket.submitterClub],
-              ["Kategori",           ticket.category],
-              ["Toplam Süre",        ticket.totalDuration],
-            ].map(([label, val]) => (
-              <div key={label}>
-                <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-0.5">{label}</p>
-                <p className="font-medium text-slate-700">{val}</p>
+        {/* Lifecycle */}
+        <div>
+          <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Grup & Agent Geçmişi</p>
+          <div className="flex flex-col gap-3">
+            {ticket.lifecycle.map((step, i) => (
+              <div key={i} className="relative flex gap-3">
+                <div className="flex flex-col items-center shrink-0">
+                  <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
+                    {i + 1}
+                  </div>
+                  {i < ticket.lifecycle.length - 1 && (
+                    <div className="w-px flex-1 bg-slate-200 my-1" />
+                  )}
+                </div>
+                <div className="bg-white border border-slate-200 rounded-xl p-3 flex-1 mb-1">
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanan Grup</p>
+                      <p className="font-semibold text-slate-700">{step.group}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanan Agent</p>
+                      <p className="font-semibold text-slate-700">{step.agent}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanma Tarihi</p>
+                      <p className="text-slate-600">{step.assignedAt}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Grupta Geçen Süre</p>
+                      <p className="text-slate-600">{step.duration}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Lifecycle */}
-          <div>
-            <p className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-3">Grup & Agent Geçmişi</p>
-            <div className="flex flex-col gap-3">
-              {ticket.lifecycle.map((step, i) => (
-                <div key={i} className="relative flex gap-3">
-                  {/* Timeline çizgisi */}
-                  <div className="flex flex-col items-center shrink-0">
-                    <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-bold shrink-0">
-                      {i + 1}
-                    </div>
-                    {i < ticket.lifecycle.length - 1 && (
-                      <div className="w-px flex-1 bg-slate-200 my-1" />
-                    )}
-                  </div>
-
-                  {/* İçerik */}
-                  <div className="bg-white border border-slate-200 rounded-xl p-3 flex-1 mb-1">
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanan Grup</p>
-                        <p className="font-semibold text-slate-700">{step.group}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanan Agent</p>
-                        <p className="font-semibold text-slate-700">{step.agent}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Atanma Tarihi</p>
-                        <p className="text-slate-600">{step.assignedAt}</p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] text-slate-400 font-semibold uppercase tracking-wider mb-0.5">Grupta Geçen Süre</p>
-                        <p className="text-slate-600">{step.duration}</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Çözüm bilgileri */}
-          {ticket.resolvedAt && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
-              <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">Çözüm Bilgileri</p>
-              <div className="grid grid-cols-3 gap-4 text-xs">
-                <div>
-                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözüm Tarihi</p>
-                  <p className="font-semibold text-slate-700">{ticket.resolvedAt}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözümleyen Agent</p>
-                  <p className="font-semibold text-slate-700">{ticket.resolvingAgent}</p>
-                </div>
-                <div>
-                  <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözümleyen Grup</p>
-                  <p className="font-semibold text-slate-700">{ticket.resolvingGroup}</p>
-                </div>
+        {/* Çözüm bilgileri */}
+        {ticket.resolvedAt && (
+          <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+            <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">Çözüm Bilgileri</p>
+            <div className="grid grid-cols-1 gap-3 text-xs">
+              <div>
+                <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözüm Tarihi</p>
+                <p className="font-semibold text-slate-700">{ticket.resolvedAt}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözümleyen Agent</p>
+                <p className="font-semibold text-slate-700">{ticket.resolvingAgent}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-emerald-600 font-semibold uppercase tracking-wider mb-0.5">Çözümleyen Grup</p>
+                <p className="font-semibold text-slate-700">{ticket.resolvingGroup}</p>
               </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </div>
-    </>
+    </div>
   );
 }
 
@@ -438,7 +427,9 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
   const avgTransfers = tickets.length ? (tickets.reduce((s,t) => s + t.groupTransfers, 0) / tickets.length).toFixed(1) : "0";
 
   return (
-    <div className="relative flex flex-col gap-4 h-full overflow-y-auto p-6">
+    <div className="flex h-full overflow-hidden">
+      {/* Sol: tablo alanı (scrollable) */}
+      <div className="flex-1 flex flex-col gap-4 overflow-y-auto p-6 min-w-0">
       {/* Metrik kartlar */}
       <div className="grid grid-cols-7 gap-3">
         <MetricCard label="Toplam Ticket" value={tickets.length} sub="filtreyle eşleşen" />
@@ -514,7 +505,9 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
           </table>
         </div>
       </div>
-      {selected && <TicketDrawer ticket={selected} onClose={() => setSelected(null)} />}
+      </div>
+      {/* Sağ: detay paneli (flex sibling, no overlay) */}
+      {selected && <TicketDetailPanel ticket={selected} onClose={() => setSelected(null)} />}
     </div>
   );
 }
