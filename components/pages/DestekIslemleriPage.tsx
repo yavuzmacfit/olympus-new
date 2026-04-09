@@ -368,12 +368,10 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
       t.escalated ? "Evet" : "Hayır",
     ]);
   } else if (tab === "agent") {
-    headers = ["Atanan Agent","Ticket No","Ticket Açılma Tarihi","Kategori","Atanan Kullanıcı Grubu","Atanma Tarihi ve Saati","Çözümleyen Agent","Çözüm Tarihi","Çözümleme Süresi","Çözümleyen Agent Grubu"];
+    headers = ["Atanan Agent","Ticket No","Ticket Açılma Tarihi","Kategori","Atanan Kullanıcı Grubu","Çözüm Tarihi","Çözümleme Süresi","Çözümleyen Agent Grubu"];
     rows = tickets.map(t => [
       t.agent, t.id, t.createdAt, t.category, t.group,
-      t.lifecycle[0]?.assignedAt ?? "-",
-      t.resolvingAgent ?? "-", t.resolvedAt ?? "-", t.totalDuration,
-      t.resolvingGroup ?? "-",
+      t.resolvedAt ?? "-", t.totalDuration, t.resolvingGroup ?? "-",
     ]);
   } else {
     headers = ["Grup","Toplam Atanan Ticket","Zamanında Kapatılan","Geciktirilen","Ort. Bekleme Süresi","Ort. Çözüm Süresi (dk)","SLA %"];
@@ -544,8 +542,6 @@ function AgentRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () =>
                   "Ticket Açılma Tarihi",
                   "Kategori",
                   "Atanan Kullanıcı Grubu",
-                  "Atanma Tarihi ve Saati",
-                  "Çözümleyen Agent",
                   "Çözüm Tarihi",
                   "Çözümleme Süresi",
                   "Çözümleyen Agent Grubu",
@@ -562,8 +558,6 @@ function AgentRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () =>
                   <td className="px-4 py-3 text-slate-600">{t.createdAt}</td>
                   <td className="px-4 py-3 text-slate-600">{t.category}</td>
                   <td className="px-4 py-3 text-slate-600">{t.group}</td>
-                  <td className="px-4 py-3 text-slate-600">{t.lifecycle[0]?.assignedAt ?? "-"}</td>
-                  <td className="px-4 py-3 text-slate-700">{t.resolvingAgent ?? "-"}</td>
                   <td className="px-4 py-3 text-slate-600">{t.resolvedAt ?? "-"}</td>
                   <td className="px-4 py-3 text-slate-600">{t.totalDuration}</td>
                   <td className="px-4 py-3 text-slate-600">{t.resolvingGroup ?? "-"}</td>
