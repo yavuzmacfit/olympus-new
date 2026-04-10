@@ -154,7 +154,12 @@ CREATE TABLE tickets (
   organization_id BIGINT,
   group_id        BIGINT,
   assignee_id     BIGINT,
-  category        VARCHAR(100),              -- custom field'dan
+  -- Kategori: 3 ayrı dropdown field, her ticketta sadece biri dolu
+  category_source   VARCHAR(20),             -- 'hq' | 'ms' | 'internal' (hangi formdan geldi)
+  category_hq       VARCHAR(200),            -- HQ Kategorileri field değeri
+  category_ms       VARCHAR(200),            -- MS Kategorileri (MultiSport Turkey) field değeri
+  category_internal VARCHAR(200),            -- İç Talep Kategorileri field değeri
+  -- Sorgularda kullanım kolaylığı için: COALESCE(category_hq, category_ms, category_internal)
   club_tag        VARCHAR(100),              -- custom field / tag'dan
   created_at      TIMESTAMPTZ NOT NULL,
   updated_at      TIMESTAMPTZ,
@@ -254,7 +259,10 @@ queue.process('zendesk-event', async (job) => {
     priority: detail.priority,
     group_id: detail.group_id,
     assignee_id: detail.assignee_id,
-    category: getCustomField(detail.custom_fields, CATEGORY_FIELD_ID),
+    // Kategori: 3 field birbirini dışlıyor, hangisi doluysa o alınır
+    ...extractCategories(detail.custom_fields),
+    // extractCategories dönüş örneği:
+    // { category_source: 'ms', category_ms: 'Üyelik İptali', category_hq: null, category_internal: null }
     club_tag: getClubFromTags(detail.tags),
     updated_at: detail.updated_at,
     ...(type === 'ticket.solved'  && { solved_at: time }),
@@ -327,7 +335,66 @@ GET /api/tickets/:id/lifecycle
 
 ---
 
-## 7. SLA Hesabı
+## 7. Kategori Alanları — Teknik Detay
+
+### 7.1 Custom Field ID'leri (Zendesk admin'den alınacak)
+
+```typescript
+const CATEGORY_FIELDS = {
+  hq:       36001001,   // "HQ Kategorileri" field ID       — Zendesk'ten alınacak
+  ms:       36001002,   // "MS Kategorileri" field ID        — Zendesk'ten alınacak
+  internal: 36001003,   // "İç Talep Kategorileri" field ID  — Zendesk'ten alınacak
+};
+```
+
+### 7.2 extractCategories Fonksiyonu
+
+```typescript
+function extractCategories(customFields: { id: number; value: string | null }[]) {
+  const hq       = customFields.find(f => f.id === CATEGORY_FIELDS.hq)?.value ?? null;
+  const ms       = customFields.find(f => f.id === CATEGORY_FIELDS.ms)?.value ?? null;
+  const internal = customFields.find(f => f.id === CATEGORY_FIELDS.internal)?.value ?? null;
+
+  const source = hq ? 'hq' : ms ? 'ms' : internal ? 'internal' : null;
+
+  return {
+    category_source:   source,
+    category_hq:       hq,
+    category_ms:       ms,
+    category_internal: internal,
+  };
+}
+```
+
+### 7.3 Sorgularda Kategori Kullanımı
+
+Raporlarda tek bir `category` değeri göstermek için:
+
+```sql
+-- Hangi form gelirse gelsin, dolu olan kategori değerini al
+COALESCE(t.category_hq, t.category_ms, t.category_internal) AS category
+```
+
+Filtrelemede kaynak bazında ayrım yapılabilir:
+
+```sql
+-- Sadece MS kategorilerine göre filtrele
+WHERE t.category_ms = 'Üyelik İptali'
+
+-- Tüm kaynaklarda belirli değere göre filtrele
+WHERE COALESCE(t.category_hq, t.category_ms, t.category_internal) = :category
+
+-- Kaynak bazında filtrele
+WHERE t.category_source = 'ms'
+```
+
+> **Frontend'e yansıması:** Kategori filtresi dropdown'u her üç field'ın distinct değerlerini
+> birleştirilmiş olarak gösterir. Kullanıcı kaynak ayrımı yapmadan filtreler,
+> backend COALESCE ile eşleştirir.
+
+---
+
+## 8. SLA Hesabı
 
 Zendesk'in kendi SLA politikaları yerine kendi kuralımızı uygulayacağız:
 
@@ -359,7 +426,7 @@ CREATE TABLE sla_rules (
 
 ---
 
-## 8. Kulüp Eşleştirmesi
+## 9. Kulüp Eşleştirmesi
 
 ### 8.1 Grup Adı Yapısı
 
@@ -523,7 +590,7 @@ Authorization: Basic {email/token}
 
 ---
 
-## 9. POC Kapsamı (İlk Aşama)
+## 10. POC Kapsamı (İlk Aşama)
 
 | # | Görev | Öncelik |
 |---|---|---|
@@ -541,7 +608,7 @@ Authorization: Basic {email/token}
 
 ---
 
-## 10. Frontend Entegrasyonu
+## 11. Frontend Entegrasyonu
 
 Mevcut `DestekIslemleriPage.tsx` ve `DestekDashboardPage.tsx` bileşenlerinde mock data yerine API çağrısı yapılacak:
 
@@ -557,7 +624,7 @@ Mock data → API geçişi sırasında arayüzde değişiklik gerekmez; sadece v
 
 ---
 
-## 11. Teknik Stack Önerileri
+## 12. Teknik Stack Önerileri
 
 | Katman | Öneri | Alternatif |
 |---|---|---|
@@ -570,7 +637,7 @@ Mock data → API geçişi sırasında arayüzde değişiklik gerekmez; sadece v
 
 ---
 
-## 12. Güvenlik Notları
+## 13. Güvenlik Notları
 
 - Webhook endpoint'i mutlaka `x-zendesk-webhook-signature` ile doğrula
 - Signing secret Zendesk admin panelinden alınır, `.env` dosyasında saklanır
