@@ -359,18 +359,120 @@ CREATE TABLE sla_rules (
 
 ## 8. Kulüp Eşleştirmesi
 
-Zendesk'te kulüp bilgisi iki şekilde gelebilir:
-1. **Tag olarak:** `tunali`, `ankamall`, `kartal` → `detail.tags` dizisinden parse edilir
-2. **Custom field olarak:** Admin Center'da "Kulüp" adında bir custom field tanımlanır → `detail.custom_fields` içinden `CLUB_FIELD_ID` ile çekilir
+### 8.1 Grup Adı Yapısı
 
-**Önerileni: Custom Field** — daha güvenilir, tag'lar kirlenebilir.
+Her kulüp için Zendesk'te **iki grup** bulunuyor:
+
+| Zendesk Grup Adı | Tür | Açıklama |
+|---|---|---|
+| `MACFit Buyaka` | Çalışan | Kulüp çalışanları |
+| `MACFit Buyaka KM-KMY` | Yönetim | Kulüp müdürü / yönetimi |
+
+Bu yapı tüm kulüpler için geçerli: `MACFit {Kulüp Adı}` ve `MACFit {Kulüp Adı} KM-KMY`.
+
+### 8.2 Kulüp Adı Çıkarma Stratejisi
+
+Grup adından kulüp adı prefix/suffix silerek parse edilebilir:
 
 ```typescript
-const CLUB_FIELD_ID = 36001235; // Zendesk admin'den alınacak
-
-function getClubFromCustomFields(fields: CustomField[]): string | null {
-  return fields.find(f => f.id === CLUB_FIELD_ID)?.value ?? null;
+function extractClubName(groupName: string): string {
+  return groupName
+    .replace(/^MACFit\s+/, '')   // başındaki "MACFit " kaldır
+    .replace(/\s+KM-KMY$/, '')   // sonundaki " KM-KMY" kaldır
+    .trim();
+  // "MACFit Buyaka KM-KMY" → "Buyaka"
+  // "MACFit Buyaka"         → "Buyaka"
 }
+```
+
+### 8.3 Veritabanı Şeması — Grup & Kulüp
+
+```sql
+-- Kulüpler tablosu (normalize edilmiş)
+CREATE TABLE clubs (
+  id    SERIAL PRIMARY KEY,
+  name  VARCHAR(200) NOT NULL UNIQUE  -- "Buyaka", "Tunalı", "Ankamall"
+);
+
+-- Zendesk grupları tablosu
+CREATE TABLE zendesk_groups (
+  id       BIGINT PRIMARY KEY,        -- Zendesk group_id
+  name     VARCHAR(200) NOT NULL,     -- "MACFit Buyaka KM-KMY"
+  club_id  INT REFERENCES clubs(id),  -- normalize edilmiş kulüp
+  type     VARCHAR(20)                -- 'staff' | 'management'
+);
+```
+
+`type` alanı için belirleme:
+```typescript
+function getGroupType(groupName: string): 'management' | 'staff' {
+  return groupName.includes('KM-KMY') ? 'management' : 'staff';
+}
+```
+
+### 8.4 Dashboard'da Kulüp Bazlı Gruplama
+
+Dashboard "kulüp başına" göstereceği için sorgu iki grubu birleştirip kulüp adıyla gruplar:
+
+```sql
+-- Kulüp bazlı açık ticket sayısı
+SELECT
+  c.name                           AS club_name,
+  COUNT(*) FILTER (WHERE t.status IN ('open','pending'))  AS open_count,
+  COUNT(*) FILTER (WHERE t.status IN ('solved','closed')) AS closed_count,
+  COUNT(*) FILTER (WHERE t.assignee_id IS NOT NULL
+                     AND t.status NOT IN ('solved','closed')) AS assigned_count,
+  COUNT(*) FILTER (WHERE t.assignee_id IS NULL
+                     AND t.status NOT IN ('solved','closed')) AS unassigned_count,
+  ROUND(AVG(
+    EXTRACT(EPOCH FROM (COALESCE(t.solved_at, NOW()) - t.created_at)) / 3600
+  ), 1)                            AS avg_open_hours
+FROM tickets t
+JOIN zendesk_groups zg ON zg.id = t.group_id
+JOIN clubs c ON c.id = zg.club_id
+WHERE t.created_at BETWEEN :start AND :end
+GROUP BY c.name
+ORDER BY open_count DESC;
+```
+
+### 8.5 SLA Raporu — Grup Tipi Ayrımı
+
+KM-KMY grupları ile çalışan grupları SLA açısından farklı değerlendirilebilir:
+
+```sql
+-- Grup tipi bazlı SLA
+SELECT
+  zg.name                     AS group_name,
+  zg.type                     AS group_type,
+  c.name                      AS club_name,
+  COUNT(*)                    AS total,
+  COUNT(*) FILTER (
+    WHERE EXTRACT(EPOCH FROM (t.solved_at - t.created_at))/60 <= sla.threshold_minutes
+  )                           AS on_time,
+  ROUND(100.0 * COUNT(*) FILTER (
+    WHERE EXTRACT(EPOCH FROM (t.solved_at - t.created_at))/60 <= sla.threshold_minutes
+  ) / COUNT(*), 1)            AS sla_pct
+FROM tickets t
+JOIN zendesk_groups zg ON zg.id = t.group_id
+JOIN clubs c ON c.id = zg.club_id
+LEFT JOIN sla_rules sla ON sla.category = t.category
+WHERE t.solved_at IS NOT NULL
+  AND t.created_at BETWEEN :start AND :end
+GROUP BY zg.id, zg.name, zg.type, c.name;
+```
+
+### 8.6 İlk Yükleme — Grup Listesi Senkronizasyonu
+
+Zendesk Groups API'sinden mevcut gruplar çekilip `zendesk_groups` + `clubs` tabloları doldurulur.
+Bu işlem webhook kurulmadan önce **bir kez** çalıştırılır:
+
+```
+GET https://{subdomain}.zendesk.com/api/v2/groups.json
+Authorization: Basic {email/token}
+
+→ Her grup için:
+  1. extractClubName(group.name) → clubs tablosuna upsert
+  2. getGroupType(group.name)    → zendesk_groups tablosuna upsert
 ```
 
 ---
