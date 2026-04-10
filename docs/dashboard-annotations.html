@@ -194,6 +194,20 @@
       <!-- Table -->
       <div class="table-box" style="position:relative;">
 
+        <!-- Table header bar with export -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:10px 14px; border-bottom:1px solid #f1f5f9;">
+          <div style="display:flex; align-items:center; gap:6px;">
+            <span style="font-size:12px; font-weight:700; color:#1e293b;">Birim Bazlı Ticket Özeti</span>
+            <span style="font-size:10px; color:#94a3b8;">— en çok açık ticketten en aza sıralı</span>
+          </div>
+          <div style="position:relative;">
+            <div class="pin" style="position:absolute; top:-10px; right:-10px; width:18px; height:18px; font-size:9px;">17</div>
+            <button title="CSV Dışa Aktar" style="display:flex; align-items:center; padding:5px; border:1px solid #e2e8f0; border-radius:8px; background:white; color:#64748b; cursor:default;">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            </button>
+          </div>
+        </div>
+
         <!-- Thead -->
         <div class="thead">
           <span>#</span>
@@ -376,6 +390,17 @@
         <strong>En Yoğun Birim</strong>
         <p>O an en fazla açık ticket'a sahip birim (kulüp veya merkezi grup).<br>
         <code>ORDER BY open DESC LIMIT 1</code></p>
+      </div>
+    </div>
+
+    <div class="section-divider">Tablo Aksiyonları</div>
+
+    <div class="legend-item">
+      <div class="legend-num">17</div>
+      <div class="legend-text">
+        <strong>CSV Dışa Aktar</strong>
+        <p>Aktif filtredeki tüm birimleri CSV olarak indirir.<br>
+        Kolonlar: Birim, Açık, Kapalı, Toplam, Üstlenilmiş, Üstlenilmemiş, Ort. Açık Kalma, SLA %</p>
       </div>
     </div>
 
