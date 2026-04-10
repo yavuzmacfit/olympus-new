@@ -432,7 +432,7 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
       <div className="flex-1 flex flex-col gap-4 overflow-y-auto overflow-x-hidden p-6 min-w-0">
 
       {/* Metrik kartlar */}
-      <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))" }}>
+      <div className="grid grid-cols-7 gap-3">
         <MetricCard label="Toplam Ticket" value={tickets.length} sub="filtreyle eşleşen" />
         <MetricCard label="Ort. Yaşam Süresi" value={`${avgH}s ${avgM}dk`} sub="ortalama süre" color="text-indigo-600" />
         <MetricCard label="Ort. Grup Transferi" value={avgTransfers} sub="ticket başına" color="text-amber-600" />
