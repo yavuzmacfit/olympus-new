@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TicketIcon, ChevronUp, ChevronDown, ChevronsUpDown, CalendarDays, X } from "lucide-react";
+import { TicketIcon, ChevronUp, ChevronDown, ChevronsUpDown, CalendarDays, X, Download } from "lucide-react";
 
 /* ─── Veri tipleri ──────────────────────────────────────────── */
 interface Row {
@@ -385,6 +385,21 @@ export default function DestekDashboardPage() {
           <TicketIcon className="w-4 h-4 text-slate-400" />
           <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
           <span className="text-xs text-slate-400 ml-1">— en çok açık ticketten en aza sıralı</span>
+          <button
+            onClick={() => {
+              const headers = ["Birim", "Açık", "Kapalı", "Toplam", "Üstlenilmiş", "Üstlenilmemiş", "Ort. Açık Kalma (saat)", "SLA %"];
+              const rows = sorted.map(r => [r.name, r.open, r.closed, r.created, r.assigned, r.unassigned, r.avgOpenHours, r.slaCompliance]);
+              const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+              const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url; a.download = `dashboard-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="ml-auto flex items-center text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors"
+            title="CSV Dışa Aktar"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
         </div>
 
         <div className="overflow-auto">
