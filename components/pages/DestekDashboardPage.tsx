@@ -355,15 +355,15 @@ export default function DestekDashboardPage() {
         <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Ort. Açık Kalma</p>
           <p className="text-2xl font-bold text-amber-600">{fmtHours(avgOpen)}</p>
-          <p className="text-[10px] text-slate-400 mt-1">kulüp ortalaması</p>
+          <p className="text-[10px] text-slate-400 mt-1">birim ortalaması</p>
         </div>
         <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Ort. SLA Uyumu</p>
           <p className={`text-2xl font-bold ${avgSla >= 85 ? "text-emerald-600" : "text-amber-600"}`}>%{avgSla}</p>
-          <p className="text-[10px] text-slate-400 mt-1">{breachCount} kulüp ihlalde</p>
+          <p className="text-[10px] text-slate-400 mt-1">{breachCount} birim ihlalde</p>
         </div>
         <div className="bg-white border border-red-100 rounded-xl px-4 py-4">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">En Yoğun Kulüp</p>
+          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">En Yoğun Birim</p>
           <p className="text-sm font-bold text-slate-700 leading-tight">{worstClub.name}</p>
           <p className="text-[10px] text-red-500 mt-1">{worstClub.open} açık ticket</p>
         </div>
