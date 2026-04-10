@@ -330,7 +330,7 @@ GET /api/reports/dashboard
   &start_date=...  (özel aralık için)
   &end_date=...
 
--- Dönen: club, open, closed, assigned, unassigned, avg_open_hours, sla_pct
+-- Dönen: birim, open, closed, assigned, unassigned, avg_resolution_minutes, sla_pct
 ```
 
 ### Ticket Lifecycle Detayı
@@ -736,9 +736,8 @@ SELECT
                      AND t.status NOT IN ('solved','closed')) AS assigned_count,
   COUNT(*) FILTER (WHERE t.assignee_id IS NULL
                      AND t.status NOT IN ('solved','closed')) AS unassigned_count,
-  ROUND(AVG(
-    EXTRACT(EPOCH FROM (COALESCE(t.solved_at, NOW()) - t.created_at)) / 3600
-  ), 1)                            AS avg_open_hours
+  ROUND(AVG(t.business_duration_minutes) FILTER (WHERE t.solved_at IS NOT NULL), 0)
+                                   AS avg_resolution_minutes  -- dönemde kapanan ticketların ort. iş saati süresi
 FROM tickets t
 JOIN zendesk_groups zg ON zg.id = t.group_id
 LEFT JOIN clubs c ON c.id = zg.club_id   -- central'lar için NULL, LEFT JOIN ile kalır

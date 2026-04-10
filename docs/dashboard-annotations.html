@@ -353,8 +353,9 @@
       <div class="legend-num">5</div>
       <div class="legend-text">
         <strong>Ort. Açık Kalma</strong>
-        <p>Hâlâ açık ticketların <strong>iş saati bazlı</strong> ortalama bekleme süresi. Sadece kulüp birimleri baz alınır (merkezi gruplar hariç).<br>
-        <code>AVG(business_open_hours)</code> where <code>isClub = true</code></p>
+        <p>Seçili dönemde <strong>kapanan</strong> ticketların iş saati bazlı ortalama çözüm süresi. "O dönemde kapatılan ticketlar ne kadar bekledi?" sorusunu cevaplar.<br>
+        Sadece kulüp birimleri baz alınır (merkezi gruplar hariç).<br>
+        <code>AVG(business_duration_minutes)</code> where <code>solved_at IS NOT NULL AND isClub = true</code></p>
       </div>
     </div>
 
@@ -435,8 +436,8 @@
       <div class="legend-num">15</div>
       <div class="legend-text">
         <strong>Ort. Açık Kalma</strong>
-        <p>Birimin açık ticketlarının iş saati bazlı ortalama bekleme süresi.<br>
-        <code>AVG(calculateBusinessMinutes(created_at, NOW(), working_hours, snoozes))</code></p>
+        <p>Birimin seçili dönemde kapanan ticketlarının iş saati bazlı ortalama çözüm süresi.<br>
+        <code>AVG(business_duration_minutes)</code> where <code>solved_at IS NOT NULL</code></p>
       </div>
     </div>
 
