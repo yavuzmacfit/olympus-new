@@ -402,7 +402,22 @@ WHERE t.category_source = 'ms'
 
 ## 8. SLA Hesabı
 
-### 8.0 İş Saati Bazlı Hesap Kuralları
+### 8.0 SLA Uyum Yüzdesi Tanımı
+
+```
+SLA Uyumu % = (SLA ihlali OLMADAN kapanan ticket sayısı / Toplam açılan ticket sayısı) × 100
+```
+
+- **Pay:** Belirlenen iş saati eşiği içinde çözülen ticket sayısı
+- **Payda:** Seçilen dönemde açılan **tüm** ticketlar (hâlâ açık olanlar dahil)
+- Hiçbir ticket SLA ihlali yaşamadan kapanırsa oran **%100** olur
+- Hâlâ açık ticketlar payda'ya girer ama henüz "ihlal" veya "zamanında" sayılmaz — kapandıktan sonra paya eklenir ya da düşürür
+
+> **Dikkat:** Paydanın "sadece kapanan ticketlar" olmaması kasıtlıdır. Bu sayede çok sayıda ticketı açık bırakan gruplar düşük SLA yüzdesine sahip olur — bu bir performans sinyalidir.
+
+---
+
+### 8.1 İş Saati Bazlı Hesap Kuralları
 
 Zendesk'in kendi SLA politikaları **yerine** kendi kuralımızı uygulayacağız. Hesap mantığı:
 
@@ -421,7 +436,7 @@ Zendesk'in kendi SLA politikaları **yerine** kendi kuralımızı uygulayacağı
 
 ---
 
-### 8.1 Snooze Aralıklarını Kaydetme
+### 8.2 Snooze Aralıklarını Kaydetme
 
 Event processor, `ticket.status_changed` eventinde snooze geçişlerini yakalar:
 
@@ -445,7 +460,7 @@ if (type === 'ticket.status_changed') {
 
 ---
 
-### 8.2 İş Saati Hesap Fonksiyonu (Backend Servisi)
+### 8.3 İş Saati Hesap Fonksiyonu (Backend Servisi)
 
 SLA süresi DB'de hesaplanmaz; **backend servisinde** hesaplanıp `tickets.business_duration_minutes` kolonuna yazılır:
 
@@ -507,7 +522,7 @@ Bu fonksiyon ticket çözüldüğünde (`ticket.solved` event'i işlenirken) ça
 
 ---
 
-### 8.3 DB Şeması — SLA Alanları
+### 8.4 DB Şeması — SLA Alanları
 
 `tickets` tablosuna ek kolonlar:
 
@@ -540,7 +555,7 @@ INSERT INTO sla_rules (group_id, category, threshold_minutes) VALUES
 
 ---
 
-### 8.4 SLA Durumu Hesaplama
+### 8.5 SLA Durumu Hesaplama
 
 Ticket çözüldüğünde event processor şunu yapar:
 
@@ -572,31 +587,45 @@ async function updateSlaStatus(ticketId: number, db: DB) {
 
 ---
 
-### 8.5 Raporlarda Kullanım
+### 8.6 Raporlarda Kullanım
 
 ```sql
 -- SLA Raporu (grup bazlı özet)
+-- Payda: dönemde açılan TÜM ticketlar (açık olanlar dahil)
+-- Pay:   sla_status = 'on_time' olanlar (kapanmış + ihlalsiz)
 SELECT
   COALESCE(c.name, zg.name)   AS group_display_name,
-  COUNT(*)                     AS total,
-  COUNT(*) FILTER (WHERE t.sla_status = 'on_time')  AS on_time,
-  COUNT(*) FILTER (WHERE t.sla_status = 'breached') AS breached,
-  ROUND(AVG(t.business_duration_minutes), 0)        AS avg_business_minutes,
+  COUNT(*)                     AS total_opened,           -- TÜM açılan ticketlar (payda)
+  COUNT(*) FILTER (WHERE t.sla_status = 'on_time')  AS on_time,   -- kapandı, ihlalsiz (pay)
+  COUNT(*) FILTER (WHERE t.sla_status = 'breached') AS breached,  -- kapandı, ihlalli
+  COUNT(*) FILTER (WHERE t.sla_status IS NULL)      AS still_open, -- henüz kapanmadı
+  ROUND(AVG(t.business_duration_minutes) FILTER (WHERE t.solved_at IS NOT NULL), 0)
+                               AS avg_business_minutes,
   ROUND(
-    100.0 * COUNT(*) FILTER (WHERE t.sla_status = 'on_time') / COUNT(*), 1
-  )                            AS sla_pct
+    100.0
+    * COUNT(*) FILTER (WHERE t.sla_status = 'on_time')
+    / NULLIF(COUNT(*), 0),     -- sıfıra bölme koruması
+    1
+  )                            AS sla_pct  -- on_time / toplam_açılan × 100
 FROM tickets t
 JOIN zendesk_groups zg ON zg.id = t.group_id
 LEFT JOIN clubs c ON c.id = zg.club_id
-WHERE t.solved_at IS NOT NULL
-  AND t.created_at BETWEEN :start AND :end
+WHERE t.created_at BETWEEN :start AND :end
   AND (:category IS NULL
        OR COALESCE(t.category_hq, t.category_ms, t.category_internal) = :category)
 GROUP BY COALESCE(c.name, zg.name), (zg.type = 'central')
 ORDER BY sla_pct ASC;
 ```
 
-> **Açık ticketlarda:** `sla_status` NULL'dur. Açık ticket için "anlık iş saati süresi" göstermek istenirse `calculateBusinessMinutes(ticket.created_at, NOW(), ...)` API katmanında hesaplanabilir; DB'ye yazılmaz.
+**Örnek çıktı:**
+
+| group_display_name | total_opened | on_time | breached | still_open | sla_pct |
+|---|---|---|---|---|---|
+| Buyaka | 40 | 32 | 4 | 4 | %80 |
+| Tunalı | 25 | 25 | 0 | 0 | %100 |
+| Yazılım 1 | 15 | 10 | 2 | 3 | %67 |
+
+> **Açık ticketlar (still_open):** `sla_status IS NULL` — kapanmadığı için henüz pay'a girmiyor. Kapandığında `on_time` veya `breached` olarak güncellenir ve sla_pct'yi etkiler. Açık ticket için "anlık iş saati süresi" göstermek istenirse `calculateBusinessMinutes(ticket.created_at, NOW(), ...)` API katmanında hesaplanabilir.
 
 ---
 
