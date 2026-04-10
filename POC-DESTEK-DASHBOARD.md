@@ -1,4 +1,6 @@
-# POC: Destek İşlemleri Dashboard — Zendesk Webhook Entegrasyonu
+# Hermes — Zendesk Entegrasyon POC
+
+> Ticket'ları dinle, işle, raporla. Hiçbir şey kaçmaz.
 
 **Hazırlayan:** Handenur Coşkun
 **Tarih:** 2026-04-10
