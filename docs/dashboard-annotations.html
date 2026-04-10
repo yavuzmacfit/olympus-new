@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Zeus Dashboard — Alan Açıklamaları</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f0f4f8; padding: 40px; }
+
+    h1 { font-size: 20px; font-weight: 700; color: #1e293b; margin-bottom: 6px; }
+    .subtitle { font-size: 13px; color: #64748b; margin-bottom: 32px; }
+
+    /* ── Layout ── */
+    .page { display: flex; gap: 32px; align-items: flex-start; }
+    .diagram { flex: 1; min-width: 0; }
+    .legend { width: 300px; shrink: 0; }
+
+    /* ── Dashboard mock ── */
+    .dash { background: #f5f8fa; border: 2px solid #e2e8f0; border-radius: 16px; padding: 20px; position: relative; }
+
+    /* Period bar */
+    .period-bar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+    .period-btn { padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 600; border: 1px solid #e2e8f0; background: white; color: #475569; cursor: default; }
+    .period-btn.active { background: #CD3638; color: white; border-color: #CD3638; }
+    .period-label { font-size: 11px; color: #94a3b8; margin-left: 4px; }
+
+    /* Metric cards */
+    .cards { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 16px; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; position: relative; }
+    .card-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; margin-bottom: 4px; }
+    .card-value { font-size: 22px; font-weight: 800; line-height: 1; margin-bottom: 4px; }
+    .card-sub { font-size: 9px; color: #94a3b8; }
+    .red    { color: #ef4444; }
+    .green  { color: #10b981; }
+    .slate  { color: #334155; }
+    .amber  { color: #d97706; }
+    .card.highlight { border-color: #6366f1; box-shadow: 0 0 0 2px #e0e7ff; }
+
+    /* Table area */
+    .table-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .table-title { font-size: 13px; font-weight: 700; color: #1e293b; }
+    .table-count { font-size: 11px; color: #94a3b8; }
+    .filter-btn { padding: 5px 12px; border-radius: 8px; font-size: 11px; border: 1px solid #e2e8f0; background: white; color: #475569; }
+
+    .table-box { background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .thead { display: grid; grid-template-columns: 32px 1.8fr 1fr 1fr 1fr 1fr 1fr 1.2fr 1.3fr; padding: 8px 12px; background: #f8fafc; border-bottom: 1px solid #e2e8f0; }
+    .thead span { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #94a3b8; }
+    .thead span.sort { color: #6366f1; }
+    .trow { display: grid; grid-template-columns: 32px 1.8fr 1fr 1fr 1fr 1fr 1fr 1.2fr 1.3fr; padding: 9px 12px; border-bottom: 1px solid #f1f5f9; align-items: center; }
+    .trow:last-child { border-bottom: none; }
+    .trow span { font-size: 11px; color: #475569; }
+    .trow span.num { font-weight: 700; }
+    .trow span.red-num { font-weight: 700; color: #ef4444; }
+    .trow span.green-num { font-weight: 700; color: #10b981; }
+    .trow span.amber-num { font-weight: 700; color: #d97706; }
+    .trow span.name { font-weight: 600; color: #1e293b; }
+    .badge { display: inline-block; font-size: 8px; background: #ede9fe; color: #7c3aed; border-radius: 4px; padding: 1px 5px; margin-left: 4px; font-weight: 700; }
+
+    .sla-bar-wrap { display: flex; align-items: center; gap: 6px; }
+    .sla-bar-bg { flex: 1; height: 5px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+    .sla-bar-fill { height: 100%; border-radius: 99px; }
+    .open-bar-wrap { display: flex; align-items: center; gap: 6px; }
+    .open-bar-bg { width: 60px; height: 5px; background: #f1f5f9; border-radius: 99px; overflow: hidden; }
+    .open-bar-fill { height: 100%; border-radius: 99px; }
+
+    /* ── Callout pins ── */
+    .pin {
+      position: absolute;
+      width: 22px; height: 22px;
+      background: #6366f1;
+      color: white;
+      border-radius: 50%;
+      font-size: 10px;
+      font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(99,102,241,0.4);
+      cursor: default;
+    }
+    .pin.red-pin { background: #ef4444; box-shadow: 0 2px 8px rgba(239,68,68,0.4); }
+    .pin.green-pin { background: #10b981; box-shadow: 0 2px 8px rgba(16,185,129,0.4); }
+
+    /* ── Connector lines (SVG overlay) ── */
+    .diagram-wrap { position: relative; }
+
+    /* ── Legend ── */
+    .legend-title { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+    .legend-item { display: flex; gap: 10px; margin-bottom: 16px; align-items: flex-start; }
+    .legend-num {
+      width: 22px; height: 22px; min-width: 22px;
+      background: #6366f1; color: white;
+      border-radius: 50%; font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .legend-num.red-pin { background: #ef4444; }
+    .legend-num.green-pin { background: #10b981; }
+    .legend-text { flex: 1; }
+    .legend-text strong { font-size: 12px; color: #1e293b; display: block; margin-bottom: 2px; }
+    .legend-text p { font-size: 11px; color: #64748b; line-height: 1.5; }
+    .legend-text code { font-family: "SF Mono", monospace; font-size: 10px; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #475569; }
+
+    .section-divider { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin: 20px 0 12px; padding-bottom: 6px; border-bottom: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+
+<h1>⚡ Zeus Dashboard — Alan Açıklamaları</h1>
+<p class="subtitle">Her numaralı pin, o alanın ne anlama geldiğini ve hangi veri kaynağından beslendiğini gösterir.</p>
+
+<div class="page">
+
+  <!-- ─── SOL: Dashboard diyagramı ─── -->
+  <div class="diagram">
+    <div class="dash diagram-wrap">
+
+      <!-- Period bar -->
+      <div class="period-bar" style="position:relative;">
+        <div class="pin" style="top:-10px; left:-10px;">1</div>
+        <button class="period-btn active">Bugün</button>
+        <button class="period-btn">Bu Hafta</button>
+        <button class="period-btn">Bu Ay</button>
+        <button class="period-btn">Özel Aralık</button>
+        <span class="period-label">10 Nisan 2026</span>
+      </div>
+
+      <!-- Metric Cards -->
+      <div class="cards" style="position:relative;">
+
+        <!-- Card 1: Toplam Açık -->
+        <div class="card" style="position:relative;">
+          <div class="pin red-pin" style="top:-10px; right:-10px;">2</div>
+          <div class="card-label">Toplam Açık</div>
+          <div class="card-value red">259</div>
+          <div class="card-sub">bugün</div>
+        </div>
+
+        <!-- Card 2: Toplam Kapalı -->
+        <div class="card" style="position:relative;">
+          <div class="pin green-pin" style="top:-10px; right:-10px;">3</div>
+          <div class="card-label">Toplam Kapalı</div>
+          <div class="card-value green">661</div>
+          <div class="card-sub">bugün</div>
+        </div>
+
+        <!-- Card 3: Toplam Oluşturulan -->
+        <div class="card" style="position:relative;">
+          <div class="pin" style="top:-10px; right:-10px;">4</div>
+          <div class="card-label">Toplam Oluşturulan</div>
+          <div class="card-value slate">920</div>
+          <div class="card-sub">bugün</div>
+        </div>
+
+        <!-- Card 4: Ort. Açık Kalma -->
+        <div class="card" style="position:relative;">
+          <div class="pin" style="top:-10px; right:-10px;">5</div>
+          <div class="card-label">Ort. Açık Kalma</div>
+          <div class="card-value amber">1g 16s</div>
+          <div class="card-sub">birim ortalaması</div>
+        </div>
+
+        <!-- Card 5: Ort. SLA Uyumu -->
+        <div class="card highlight" style="position:relative;">
+          <div class="pin" style="top:-10px; right:-10px;">6</div>
+          <div class="card-label">Ort. SLA Uyumu</div>
+          <div class="card-value amber">%82</div>
+          <div class="card-sub">6 birim ihlalde</div>
+        </div>
+
+        <!-- Card 6: En Yoğun Birim -->
+        <div class="card" style="position:relative; border-color: #fee2e2;">
+          <div class="pin red-pin" style="top:-10px; right:-10px;">7</div>
+          <div class="card-label">En Yoğun Birim</div>
+          <div class="card-value" style="font-size:14px; color:#1e293b; margin-top:4px;">Akbatı</div>
+          <div class="card-sub" style="color:#ef4444;">18 açık ticket</div>
+        </div>
+
+      </div>
+
+      <!-- Table header row -->
+      <div class="table-header-row" style="position:relative;">
+        <div>
+          <span class="table-title">🗂 Birim Bazlı Ticket Özeti</span>
+          <span style="font-size:11px; color:#94a3b8; margin-left:8px;">— en çok açık ticketten en aza sıralı</span>
+        </div>
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span class="table-count">31 birim gösteriliyor</span>
+          <div style="position:relative;">
+            <div class="pin" style="top:-12px; right:-12px;">8</div>
+            <button class="filter-btn">Tüm Birimler ▾</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-box" style="position:relative;">
+
+        <!-- Thead -->
+        <div class="thead">
+          <span>#</span>
+          <span>
+            <div class="pin" style="position:relative; display:inline-flex; top:-6px; left:-4px; width:18px; height:18px; font-size:9px;">9</div>
+            Birim
+          </span>
+          <span class="sort">Açık ↓</span>
+          <span>
+            <div class="pin green-pin" style="position:relative; display:inline-flex; top:-6px; left:-4px; width:18px; height:18px; font-size:9px;">10</div>
+            Kapalı
+          </span>
+          <span>
+            <div class="pin" style="position:relative; display:inline-flex; top:-6px; left:-4px; width:18px; height:18px; font-size:9px;">11</div>
+            Toplam
+          </span>
+          <span>
+            <div class="pin" style="position:relative; display:inline-flex; top:-6px; left:-4px; width:18px; height:18px; font-size:9px;">12</div>
+            Üstlenilmiş
+          </span>
+          <span>
+            <div class="pin red-pin" style="position:relative; display:inline-flex; top:-6px; left:-4px; width:18px; height:18px; font-size:9px;">13</div>
+            Üstlenilmemiş
+          </span>
+          <span>
+            <div class="pin" style="position:relative; display:inline-flex; top:-6px; left:-4px; width:18px; height:18px; font-size:9px;">14</div>
+            Ort. Açık Kalma
+          </span>
+          <span>
+            <div class="pin" style="position:relative; display:inline-flex; top:-6px; left:-4px; width:18px; height:18px; font-size:9px;">15</div>
+            SLA Uyumu
+          </span>
+        </div>
+
+        <!-- Row 1 -->
+        <div class="trow">
+          <span style="font-size:11px; color:#94a3b8;">1</span>
+          <span class="name">Akbatı</span>
+          <div class="open-bar-wrap">
+            <div class="open-bar-bg"><div class="open-bar-fill" style="width:90%; background:#f87171;"></div></div>
+            <span class="red-num">18</span>
+          </div>
+          <span class="green-num">22</span>
+          <span class="num">40</span>
+          <span class="amber-num">11</span>
+          <span class="red-num">7</span>
+          <span class="amber-num" style="font-weight:700;">2g 4s</span>
+          <div class="sla-bar-wrap">
+            <div class="sla-bar-bg"><div class="sla-bar-fill" style="width:72%; background:#ef4444;"></div></div>
+            <span style="font-size:11px; font-weight:700; color:#ef4444;">%72</span>
+          </div>
+        </div>
+
+        <!-- Row 2 -->
+        <div class="trow">
+          <span style="font-size:11px; color:#94a3b8;">2</span>
+          <span class="name">Mall of Istanbul</span>
+          <div class="open-bar-wrap">
+            <div class="open-bar-bg"><div class="open-bar-fill" style="width:80%; background:#f87171;"></div></div>
+            <span class="red-num">16</span>
+          </div>
+          <span class="green-num">21</span>
+          <span class="num">37</span>
+          <span class="amber-num">10</span>
+          <span class="red-num">6</span>
+          <span style="font-size:11px; font-weight:700; color:#d97706;">2 gün</span>
+          <div class="sla-bar-wrap">
+            <div class="sla-bar-bg"><div class="sla-bar-fill" style="width:75%; background:#fbbf24;"></div></div>
+            <span style="font-size:11px; font-weight:700; color:#d97706;">%75</span>
+          </div>
+        </div>
+
+        <!-- Row 3 -->
+        <div class="trow">
+          <span style="font-size:11px; color:#94a3b8;">3</span>
+          <span class="name">
+            MAC Ürün Yönetimi
+            <span class="badge">merkezi</span>
+          </span>
+          <div class="open-bar-wrap">
+            <div class="open-bar-bg"><div class="open-bar-fill" style="width:45%; background:#818cf8;"></div></div>
+            <span style="font-size:11px; font-weight:700; color:#6366f1;">9</span>
+          </div>
+          <span class="green-num">18</span>
+          <span class="num">27</span>
+          <span class="amber-num">7</span>
+          <span class="red-num">2</span>
+          <span style="font-size:11px; font-weight:700; color:#d97706;">1g 14s</span>
+          <div class="sla-bar-wrap">
+            <div class="sla-bar-bg"><div class="sla-bar-fill" style="width:81%; background:#fbbf24;"></div></div>
+            <span style="font-size:11px; font-weight:700; color:#d97706;">%81</span>
+          </div>
+        </div>
+
+        <div style="padding: 8px 12px; font-size:10px; color:#94a3b8; text-align:center; border-top:1px solid #f1f5f9;">
+          … 28 satır daha · Sayfa 1 / 4
+        </div>
+      </div>
+
+    </div><!-- /dash -->
+  </div><!-- /diagram -->
+
+  <!-- ─── SAĞ: Legend ─── -->
+  <div class="legend">
+    <div class="legend-title">📌 Alan Açıklamaları</div>
+
+    <div class="section-divider">Filtreler</div>
+
+    <div class="legend-item">
+      <div class="legend-num">1</div>
+      <div class="legend-text">
+        <strong>Periyod Seçici</strong>
+        <p>Tüm metrikler ve tablo bu periyoda göre filtrelenir.<br>
+        <code>Bugün</code> = son 24s · <code>Bu Hafta</code> = son 7 gün · <code>Bu Ay</code> = son 30 gün · <code>Özel Aralık</code> = tarih girişi.<br>
+        API: <code>?period=daily|weekly|monthly</code> veya <code>?start_date=&amp;end_date=</code></p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">8</div>
+      <div class="legend-text">
+        <strong>Birim Seç (Filtre)</strong>
+        <p>Kulüpler ve Merkezi Gruplar ayrı bölümlerde listelenir. Seçim tabloyu filtreler. API'ye <code>?group_ids[]=</code> parametresi olarak gider.</p>
+      </div>
+    </div>
+
+    <div class="section-divider">Özet Kartlar</div>
+
+    <div class="legend-item">
+      <div class="legend-num red-pin">2</div>
+      <div class="legend-text">
+        <strong>Toplam Açık</strong>
+        <p>Seçili dönemde henüz çözüme kavuşmamış ticket sayısı. <code>solved</code> ve <code>closed</code> dışındaki tüm statusler açık sayılır.<br>
+        <code>status IN ('new', 'open', 'pending', 'on-hold')</code><br>
+        Tüm birimler dahil. Kırmızı = dikkat gerektiriyor.</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num green-pin">3</div>
+      <div class="legend-text">
+        <strong>Toplam Kapalı</strong>
+        <p><code>status IN ('solved','closed')</code> olan ticket sayısı.</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">4</div>
+      <div class="legend-text">
+        <strong>Toplam Oluşturulan</strong>
+        <p>Dönem içinde <code>created_at</code> olan tüm yeni ticketlar. Açık + kapalı toplamı.</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">5</div>
+      <div class="legend-text">
+        <strong>Ort. Açık Kalma</strong>
+        <p>Hâlâ açık ticketların <strong>iş saati bazlı</strong> ortalama bekleme süresi. Sadece kulüp birimleri baz alınır (merkezi gruplar hariç).<br>
+        <code>AVG(business_open_hours)</code> where <code>isClub = true</code></p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">6</div>
+      <div class="legend-text">
+        <strong>Ort. SLA Uyumu</strong>
+        <p>Kulüp birimlerinin SLA yüzdesi ortalaması.<br>
+        <code>SLA % = on_time_closed / total_opened × 100</code><br>
+        Alt satır: SLA eşiğini (<code>sla_rules.threshold_minutes</code>) ihlal eden birim sayısı.<br>
+        🟢 ≥%90 · 🟡 %75–89 · 🔴 &lt;%75</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num red-pin">7</div>
+      <div class="legend-text">
+        <strong>En Yoğun Birim</strong>
+        <p>O an en fazla açık ticket'a sahip kulüp.<br>
+        <code>ORDER BY open DESC LIMIT 1</code> (sadece <code>isClub = true</code>)</p>
+      </div>
+    </div>
+
+    <div class="section-divider">Tablo Kolonları</div>
+
+    <div class="legend-item">
+      <div class="legend-num">9</div>
+      <div class="legend-text">
+        <strong>Birim</strong>
+        <p>Kulüp veya merkezi grup adı.<br>
+        <code>COALESCE(clubs.name, zendesk_groups.name)</code><br>
+        <code>merkezi</code> badge'i: <code>zendesk_groups.type = 'central'</code></p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num red-pin">10</div>
+      <div class="legend-text">
+        <strong>Açık</strong>
+        <p>Birim bazında açık ticket sayısı. Progress bar: birimin toplam içindeki oranını gösterir.<br>
+        🔴 yüksek · 🟡 orta · 🔵 düşük</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num green-pin">11</div>
+      <div class="legend-text">
+        <strong>Kapalı</strong>
+        <p><code>status IN ('solved','closed')</code> ticket sayısı, birim bazında.</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">12</div>
+      <div class="legend-text">
+        <strong>Toplam</strong>
+        <p>Dönem içinde oluşturulan tüm ticketlar (açık + kapalı).</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">13</div>
+      <div class="legend-text">
+        <strong>Üstlenilmiş</strong>
+        <p>Açık ticketlar içinde <code>assignee_id IS NOT NULL</code> olanlar. Agent atanmış ama henüz çözülmemiş.</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num red-pin">14</div>
+      <div class="legend-text">
+        <strong>Üstlenilmemiş</strong>
+        <p>Açık ticketlar içinde <code>assignee_id IS NULL</code> olanlar. Henüz hiçbir agent almamış — aksiyon bekliyor.</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">15</div>
+      <div class="legend-text">
+        <strong>Ort. Açık Kalma</strong>
+        <p>Birimin açık ticketlarının iş saati bazlı ortalama bekleme süresi.<br>
+        <code>AVG(calculateBusinessMinutes(created_at, NOW(), working_hours, snoozes))</code></p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">16</div>
+      <div class="legend-text">
+        <strong>SLA Uyumu</strong>
+        <p>Birim bazında SLA yüzdesi.<br>
+        <code>on_time_closed / total_opened × 100</code><br>
+        Progress bar rengi: 🟢 ≥%90 · 🟡 %75–89 · 🔴 &lt;%75</p>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px;">
+      <div style="font-size:11px; font-weight:700; color:#475569; margin-bottom:8px;">📡 API Endpoint</div>
+      <code style="font-size:10px; color:#6366f1; line-height:1.8; display:block;">
+        GET /api/reports/dashboard<br>
+        &nbsp;&nbsp;?period=daily<br>
+        &nbsp;&nbsp;&amp;start_date=2026-04-10<br>
+        &nbsp;&nbsp;&amp;end_date=2026-04-10<br>
+        &nbsp;&nbsp;&amp;group_ids[]=900001<br>
+        &nbsp;&nbsp;&amp;group_ids[]=900002
+      </code>
+    </div>
+
+  </div><!-- /legend -->
+
+</div><!-- /page -->
+
+</body>
+</html>

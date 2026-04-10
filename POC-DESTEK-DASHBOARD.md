@@ -730,7 +730,7 @@ Dashboard iki farklı satır tipi gösterir:
 SELECT
   COALESCE(c.name, zg.name)        AS display_name,   -- kulüp adı veya grup adı
   zg.type = 'central'              AS is_central,
-  COUNT(*) FILTER (WHERE t.status IN ('open','pending'))  AS open_count,
+  COUNT(*) FILTER (WHERE t.status NOT IN ('solved','closed')) AS open_count,  -- new, open, pending, on-hold
   COUNT(*) FILTER (WHERE t.status IN ('solved','closed')) AS closed_count,
   COUNT(*) FILTER (WHERE t.assignee_id IS NOT NULL
                      AND t.status NOT IN ('solved','closed')) AS assigned_count,
