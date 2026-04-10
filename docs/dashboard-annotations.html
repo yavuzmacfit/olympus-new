@@ -363,7 +363,7 @@
       <div class="legend-num">6</div>
       <div class="legend-text">
         <strong>Ort. SLA Uyumu</strong>
-        <p>Kulüp birimlerinin SLA yüzdesi ortalaması.<br>
+        <p>Tüm birimlerin (kulüp + merkezi gruplar) SLA yüzdesi ortalaması.<br>
         <code>SLA % = on_time_closed / total_opened × 100</code><br>
         Alt satır: SLA eşiğini (<code>sla_rules.threshold_minutes</code>) ihlal eden birim sayısı.<br>
         🟢 ≥%90 · 🟡 %75–89 · 🔴 &lt;%75</p>
@@ -374,8 +374,8 @@
       <div class="legend-num red-pin">7</div>
       <div class="legend-text">
         <strong>En Yoğun Birim</strong>
-        <p>O an en fazla açık ticket'a sahip kulüp.<br>
-        <code>ORDER BY open DESC LIMIT 1</code> (sadece <code>isClub = true</code>)</p>
+        <p>O an en fazla açık ticket'a sahip birim (kulüp veya merkezi grup).<br>
+        <code>ORDER BY open DESC LIMIT 1</code></p>
       </div>
     </div>
 
