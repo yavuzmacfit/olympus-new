@@ -381,10 +381,12 @@ export default function DestekDashboardPage() {
 
       {/* ── Tablo ──────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
-        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2">
-          <TicketIcon className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
-          <span className="text-xs text-slate-400 ml-1">— en çok açık ticketten en aza sıralı</span>
+        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TicketIcon className="w-4 h-4 text-slate-400" />
+            <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
+            <span className="text-xs text-slate-400 ml-1">— en çok açık ticketten en aza sıralı</span>
+          </div>
           <button
             onClick={() => {
               const headers = ["Birim", "Açık", "Kapalı", "Toplam", "Üstlenilmiş", "Üstlenilmemiş", "Ort. Açık Kalma (saat)", "SLA %"];
@@ -395,7 +397,7 @@ export default function DestekDashboardPage() {
               const a = document.createElement("a"); a.href = url; a.download = `dashboard-${new Date().toISOString().slice(0,10)}.csv`; a.click();
               URL.revokeObjectURL(url);
             }}
-            className="ml-auto flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors"
+            className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors"
             title="CSV Dışa Aktar"
           >
             <Download className="w-3.5 h-3.5" />
