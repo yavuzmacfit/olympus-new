@@ -363,12 +363,14 @@ CREATE TABLE sla_rules (
 
 Her kulüp için Zendesk'te **iki grup** bulunuyor:
 
-| Zendesk Grup Adı | Tür | Açıklama |
-|---|---|---|
-| `MACFit Buyaka` | Çalışan | Kulüp çalışanları |
-| `MACFit Buyaka KM-KMY` | Yönetim | Kulüp müdürü / yönetimi |
+| Zendesk Grup Adı | Tür | Üye Sayısı (örnek) | Açıklama |
+|---|---|---|---|
+| `Buyaka` | Çalışan | 9 | Kulüp çalışanları |
+| `KM-KMY Buyaka` | Yönetim | 3 | Kulüp müdürü / yönetimi |
 
-Bu yapı tüm kulüpler için geçerli: `MACFit {Kulüp Adı}` ve `MACFit {Kulüp Adı} KM-KMY`.
+Bu yapı tüm kulüpler için geçerli:
+- Çalışan grubu: `{Kulüp Adı}` (örn. `Buyaka`, `Tunalı`, `Ankamall`)
+- Yönetim grubu: `KM-KMY {Kulüp Adı}` (örn. `KM-KMY Buyaka`)
 
 ### 8.2 Kulüp Adı Çıkarma Stratejisi
 
@@ -377,11 +379,14 @@ Grup adından kulüp adı prefix/suffix silerek parse edilebilir:
 ```typescript
 function extractClubName(groupName: string): string {
   return groupName
-    .replace(/^MACFit\s+/, '')   // başındaki "MACFit " kaldır
-    .replace(/\s+KM-KMY$/, '')   // sonundaki " KM-KMY" kaldır
+    .replace(/^KM-KMY\s+/, '')   // başındaki "KM-KMY " prefix'ini kaldır
     .trim();
-  // "MACFit Buyaka KM-KMY" → "Buyaka"
-  // "MACFit Buyaka"         → "Buyaka"
+  // "KM-KMY Buyaka" → "Buyaka"
+  // "Buyaka"         → "Buyaka"
+}
+
+function getGroupType(groupName: string): 'management' | 'staff' {
+  return groupName.startsWith('KM-KMY ') ? 'management' : 'staff';
 }
 ```
 
