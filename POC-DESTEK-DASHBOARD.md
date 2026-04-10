@@ -390,10 +390,23 @@ function getGroupType(groupName: string): 'management' | 'staff' {
 }
 ```
 
-### 8.3 Veritabanı Şeması — Grup & Kulüp
+### 8.3 Grup Türleri
+
+Zendesk'teki gruplar üç tipe ayrılır:
+
+| Tür | Örnekler | `club_id` |
+|---|---|---|
+| `club_staff` | `Buyaka`, `Tunalı`, `Ankamall` | dolu |
+| `club_management` | `KM-KMY Buyaka`, `KM-KMY Tunalı` | dolu |
+| `central` | `Yazılım 1`, `MAC Ürün Yönetimi` | NULL |
+
+**Dashboard** yalnızca `club_staff` + `club_management` gruplarını kulüp bazında gösterir.
+**SLA / Agent raporu** tüm grupları (merkezi dahil) gösterir.
+
+### 8.4 Veritabanı Şeması — Grup & Kulüp
 
 ```sql
--- Kulüpler tablosu (normalize edilmiş)
+-- Kulüpler tablosu (sadece fiziksel kulüpler)
 CREATE TABLE clubs (
   id    SERIAL PRIMARY KEY,
   name  VARCHAR(200) NOT NULL UNIQUE  -- "Buyaka", "Tunalı", "Ankamall"
@@ -401,26 +414,37 @@ CREATE TABLE clubs (
 
 -- Zendesk grupları tablosu
 CREATE TABLE zendesk_groups (
-  id       BIGINT PRIMARY KEY,        -- Zendesk group_id
-  name     VARCHAR(200) NOT NULL,     -- "MACFit Buyaka KM-KMY"
-  club_id  INT REFERENCES clubs(id),  -- normalize edilmiş kulüp
-  type     VARCHAR(20)                -- 'staff' | 'management'
+  id            BIGINT PRIMARY KEY,
+  name          VARCHAR(200) NOT NULL,   -- "KM-KMY Buyaka", "Yazılım 1"
+  type          VARCHAR(20) NOT NULL,    -- 'club_staff' | 'club_management' | 'central'
+  club_id       INT REFERENCES clubs(id) -- NULL ise merkezi grup
 );
 ```
 
-`type` alanı için belirleme:
+`type` belirleme mantığı:
 ```typescript
-function getGroupType(groupName: string): 'management' | 'staff' {
-  return groupName.includes('KM-KMY') ? 'management' : 'staff';
+function classifyGroup(groupName: string): 'club_management' | 'club_staff' | 'central' {
+  if (groupName.startsWith('KM-KMY ')) return 'club_management';
+
+  // Bilinen merkezi grupları listeyle eşleştir
+  const CENTRAL_GROUPS = ['Yazılım 1', 'MAC Ürün Yönetimi', /* diğerleri */];
+  if (CENTRAL_GROUPS.includes(groupName))   return 'central';
+
+  return 'club_staff';  // geri kalan = kulüp çalışan grubu
 }
 ```
 
-### 8.4 Dashboard'da Kulüp Bazlı Gruplama
+> **Not:** İlk senkronizasyonda merkezi gruplar admin tarafından onaylanarak
+> `CENTRAL_GROUPS` listesine eklenmeli. Sonrasında yeni grup eklendiğinde
+> sistem `club_staff` varsayar, gerekirse düzeltilebilir.
 
-Dashboard "kulüp başına" göstereceği için sorgu iki grubu birleştirip kulüp adıyla gruplar:
+### 8.5 Dashboard'da Kulüp Bazlı Gruplama
+
+Dashboard "kulüp başına" göstereceği için sorgu her iki kulüp grubunu (staff + management)
+birleştirip kulüp adıyla gruplar. Merkezi gruplar (`central`) bu sorguda **dışlanır**.
 
 ```sql
--- Kulüp bazlı açık ticket sayısı
+-- Kulüp bazlı özet (merkezi gruplar hariç)
 SELECT
   c.name                           AS club_name,
   COUNT(*) FILTER (WHERE t.status IN ('open','pending'))  AS open_count,
@@ -434,13 +458,14 @@ SELECT
   ), 1)                            AS avg_open_hours
 FROM tickets t
 JOIN zendesk_groups zg ON zg.id = t.group_id
-JOIN clubs c ON c.id = zg.club_id
+JOIN clubs c ON c.id = zg.club_id          -- club_id NULL olanlar (central) JOIN'den düşer
 WHERE t.created_at BETWEEN :start AND :end
+  AND zg.type IN ('club_staff', 'club_management')  -- merkezi gruplar hariç
 GROUP BY c.name
 ORDER BY open_count DESC;
 ```
 
-### 8.5 SLA Raporu — Grup Tipi Ayrımı
+### 8.6 SLA Raporu — Grup Tipi Ayrımı
 
 KM-KMY grupları ile çalışan grupları SLA açısından farklı değerlendirilebilir:
 
@@ -466,7 +491,7 @@ WHERE t.solved_at IS NOT NULL
 GROUP BY zg.id, zg.name, zg.type, c.name;
 ```
 
-### 8.6 İlk Yükleme — Grup Listesi Senkronizasyonu
+### 8.7 İlk Yükleme — Grup Listesi Senkronizasyonu
 
 Zendesk Groups API'sinden mevcut gruplar çekilip `zendesk_groups` + `clubs` tabloları doldurulur.
 Bu işlem webhook kurulmadan önce **bir kez** çalıştırılır:
