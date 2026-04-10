@@ -461,7 +461,7 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
             </div>
             <button
               onClick={onExport}
-              className="flex items-center text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar"
+              className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar"
             >
               <Download className="w-3.5 h-3.5" />
             </button>
@@ -528,7 +528,7 @@ function AgentRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () =>
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
           <p className="text-sm font-bold text-slate-700">Agent Raporu</p>
-          <button onClick={onExport} className="flex items-center text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
+          <button onClick={onExport} className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
               <Download className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -609,7 +609,7 @@ function SlaRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () => v
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
           <p className="text-sm font-bold text-slate-700">SLA Raporu — Grup Bazlı Özet</p>
-          <button onClick={onExport} className="flex items-center text-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
+          <button onClick={onExport} className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
               <Download className="w-3.5 h-3.5" />
           </button>
         </div>
