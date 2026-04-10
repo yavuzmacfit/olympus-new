@@ -65,16 +65,20 @@ Zendesk
 | `ticket.updated` | Herhangi bir alan değiştiğinde | Durum takibi |
 | `ticket.assignee_changed` | Agent ataması değiştiğinde | Agent lifecycle |
 | `ticket.group_changed` | Grup değiştiğinde | Grup geçiş sayısı, lifecycle |
-| `ticket.status_changed` | Durum değiştiğinde | SLA hesabı, açık/kapalı |
+| `ticket.status_changed` | Durum değiştiğinde | SLA hesabı, açık/kapalı, **snooze tespiti** |
 | `ticket.solved` | Çözüldü durumuna geçtiğinde | Çözüm süresi, SLA |
 | `ticket.closed` | Kapatıldığında | Final durum |
 | `ticket.priority_changed` | Öncelik değiştiğinde | Eskalasyon takibi |
+
+> **Snooze tespiti:** Zendesk'te ticket `on-hold` statüsüne geçince snooze sayılır.
+> `ticket.status_changed` eventinde `to_status = 'on-hold'` → snooze başladı,
+> `from_status = 'on-hold'` → snooze bitti. Bu iki event ile snooze aralıkları yakalanır.
 
 > **Tek webhook yeter mi?**
 > Evet. Zendesk'te bir webhook oluştururken birden fazla event subscribe edilebilir.
 > `ticket.created`, `ticket.assignee_changed`, `ticket.group_changed`,
 > `ticket.status_changed`, `ticket.solved`, `ticket.closed` subscribe edilirse
-> tüm lifecycle yakalanır.
+> tüm lifecycle + snooze aralıkları yakalanır.
 
 ### 3.2 Zendesk'te Webhook Oluşturma
 
@@ -172,13 +176,13 @@ CREATE TABLE tickets (
 
 ### 4.2 `ticket_lifecycle` tablosu
 
-Her grup/agent değişimi bir satır. SLA, lifecycle ve agent raporu buradan hesaplanır.
+Her grup/agent/status değişimi bir satır. SLA, lifecycle ve agent raporu buradan hesaplanır.
 
 ```sql
 CREATE TABLE ticket_lifecycle (
   id          SERIAL PRIMARY KEY,
   ticket_id   BIGINT REFERENCES tickets(id),
-  event_type  VARCHAR(50),                   -- assigned, group_changed, status_changed
+  event_type  VARCHAR(50),                   -- assigned, group_changed, status_changed, snooze_start, snooze_end
   group_id    BIGINT,
   group_name  VARCHAR(200),
   agent_id    BIGINT,
@@ -186,10 +190,12 @@ CREATE TABLE ticket_lifecycle (
   from_status VARCHAR(20),
   to_status   VARCHAR(20),
   occurred_at TIMESTAMPTZ NOT NULL,
-  duration_minutes INTEGER                   -- bir sonraki event'a kadar geçen süre
+  duration_minutes INTEGER                   -- bir sonraki event'a kadar geçen süre (wall clock)
                                              -- (processor tarafından hesaplanır)
 );
 ```
+
+> **Snooze kayıtları:** `to_status = 'on-hold'` gelen event `snooze_start`, `from_status = 'on-hold'` gelen event `snooze_end` olarak işlenir ve her ikisi de `ticket_lifecycle`'a eklenir. Bu kayıtlar iş saati hesabında snooze aralıklarını çıkarmak için kullanılır.
 
 ### 4.3 `zendesk_groups` tablosu (lookup)
 
@@ -396,33 +402,201 @@ WHERE t.category_source = 'ms'
 
 ## 8. SLA Hesabı
 
-Zendesk'in kendi SLA politikaları yerine kendi kuralımızı uygulayacağız:
+### 8.0 İş Saati Bazlı Hesap Kuralları
 
-```sql
--- Ticket bazlı çözüm süresi
-SELECT
-  t.id,
-  t.subject,
-  t.group_id,
-  EXTRACT(EPOCH FROM (t.solved_at - t.created_at)) / 60 AS resolution_minutes,
-  CASE
-    WHEN EXTRACT(EPOCH FROM (t.solved_at - t.created_at)) / 60 <= 3600 THEN 'on_time'
-    ELSE 'breached'
-  END AS sla_status
-FROM tickets t
-WHERE t.solved_at IS NOT NULL
-  AND t.created_at BETWEEN '2026-04-01' AND '2026-04-08';
+Zendesk'in kendi SLA politikaları **yerine** kendi kuralımızı uygulayacağız. Hesap mantığı:
+
+1. **Sadece iş saatleri sayılır.** Her grubun `working_hours` tanımı vardır. Gece 22:00'de açılan bir ticket, ertesi sabah mesai başlayıncaya kadar süre saymaz.
+2. **Snooze (on-hold) süresi sayılmaz.** Ticket `on-hold` statüsündeyken geçen süre iş saati içinde olsa bile toplam süreye eklenmez.
+3. **Eşik iş dakikası cinsindendir.** `sla_rules.threshold_minutes = 300` → o grubun iş saatlerinden 5 saat.
+
+**Örnek:**
+- Grup çalışma saati: 09:00–14:00 (5 saat = 300 dk/gün)
+- Ticket açılış: Pazartesi 10:00
+- Ticket kapanış: Salı 12:00
+- Pazartesi 10:00–14:00 = 240 dk (çalışıldı)
+- Salı 09:00–12:00 = 180 dk (çalışıldı)
+- Ticket 30 dk snooze'daydı (Salı 10:00–10:30)
+- **Toplam iş süresi = 240 + 180 − 30 = 390 dk**
+
+---
+
+### 8.1 Snooze Aralıklarını Kaydetme
+
+Event processor, `ticket.status_changed` eventinde snooze geçişlerini yakalar:
+
+```typescript
+if (type === 'ticket.status_changed') {
+  const isSnoozeStart = event.current_status === 'on-hold';
+  const isSnoozeEnd   = event.previous_status === 'on-hold';
+
+  if (isSnoozeStart || isSnoozeEnd) {
+    await db.ticket_lifecycle.insert({
+      ticket_id:  ticketId,
+      event_type: isSnoozeStart ? 'snooze_start' : 'snooze_end',
+      occurred_at: time,
+      group_id:   detail.group_id,
+      from_status: event.previous_status,
+      to_status:   event.current_status,
+    });
+  }
+}
 ```
 
-SLA eşiği şu an 3600 dk (60 saat) olarak frontend'de tanımlı.
-Kategoriye göre farklı eşik istenirse `sla_rules` tablosu eklenebilir:
+---
+
+### 8.2 İş Saati Hesap Fonksiyonu (Backend Servisi)
+
+SLA süresi DB'de hesaplanmaz; **backend servisinde** hesaplanıp `tickets.business_duration_minutes` kolonuna yazılır:
+
+```typescript
+/**
+ * İki zaman damgası arasındaki iş saati dakikasını hesaplar.
+ * workingHours: { mon: { start: "09:00", end: "18:00" }, ... }
+ * snoozeIntervals: [{ start: Date, end: Date }, ...]
+ */
+function calculateBusinessMinutes(
+  openedAt: Date,
+  closedAt: Date,
+  workingHours: WorkingHours,
+  snoozeIntervals: Interval[]
+): number {
+  let total = 0;
+  let cursor = new Date(openedAt);
+
+  while (cursor < closedAt) {
+    const dayKey = getDayKey(cursor);         // 'mon', 'tue', ...
+    const hours = workingHours[dayKey];
+
+    if (!hours) {
+      // Kapalı gün — bir sonraki güne atla
+      cursor = startOfNextDay(cursor);
+      continue;
+    }
+
+    const workStart = setTime(cursor, hours.start);
+    const workEnd   = setTime(cursor, hours.end);
+
+    // Bu gün için kesişen çalışma aralığı
+    const from = max(cursor, workStart);
+    const to   = min(closedAt, workEnd);
+
+    if (from < to) {
+      let workMinutes = diffMinutes(from, to);
+
+      // Snooze aralıklarını çıkar
+      for (const snooze of snoozeIntervals) {
+        const snoozeFrom = max(snooze.start, from);
+        const snoozeTo   = min(snooze.end, to);
+        if (snoozeFrom < snoozeTo) {
+          workMinutes -= diffMinutes(snoozeFrom, snoozeTo);
+        }
+      }
+
+      total += Math.max(0, workMinutes);
+    }
+
+    cursor = startOfNextDay(cursor);
+  }
+
+  return total;
+}
+```
+
+Bu fonksiyon ticket çözüldüğünde (`ticket.solved` event'i işlenirken) çağrılır ve sonuç `tickets.business_duration_minutes`'a yazılır.
+
+---
+
+### 8.3 DB Şeması — SLA Alanları
+
+`tickets` tablosuna ek kolonlar:
+
+```sql
+ALTER TABLE tickets ADD COLUMN
+  business_duration_minutes INTEGER,  -- calculateBusinessMinutes() sonucu
+  sla_status VARCHAR(10)              -- 'on_time' | 'breached' | NULL (açık ticket)
+;
+```
+
+`sla_rules` tablosu — kategoriye ve/veya gruba göre eşik:
 
 ```sql
 CREATE TABLE sla_rules (
-  category    VARCHAR(100) PRIMARY KEY,
-  threshold_minutes INTEGER NOT NULL
+  id                SERIAL PRIMARY KEY,
+  group_id          BIGINT REFERENCES zendesk_groups(id),  -- NULL = tüm gruplar
+  category          VARCHAR(100),                          -- NULL = tüm kategoriler
+  threshold_minutes INTEGER NOT NULL,   -- iş dakikası cinsinden eşik
+  UNIQUE (group_id, category)
 );
+
+-- Örnek veriler
+INSERT INTO sla_rules (group_id, category, threshold_minutes) VALUES
+  (NULL, NULL,           300),   -- varsayılan: 5 iş saati
+  (NULL, 'Teknik Arıza', 120),   -- teknik arıza: 2 iş saati
+  (NULL, 'Üyelik İptali', 480);  -- üyelik iptali: 8 iş saati
 ```
+
+**Eşik öncelik sırası:** grup + kategori → sadece kategori → sadece grup → varsayılan
+
+---
+
+### 8.4 SLA Durumu Hesaplama
+
+Ticket çözüldüğünde event processor şunu yapar:
+
+```typescript
+async function updateSlaStatus(ticketId: number, db: DB) {
+  const ticket = await db.tickets.findById(ticketId);
+  const group  = await db.zendesk_groups.findById(ticket.group_id);
+  const snoozes = await db.ticket_lifecycle
+    .where({ ticket_id: ticketId, event_type: ['snooze_start', 'snooze_end'] })
+    .orderBy('occurred_at');
+
+  const snoozeIntervals = pairSnoozeEvents(snoozes);  // start/end çiftleri
+
+  const businessMinutes = calculateBusinessMinutes(
+    ticket.created_at,
+    ticket.solved_at,
+    group.working_hours,
+    snoozeIntervals
+  );
+
+  const threshold = await getSlaThreshold(db, ticket.group_id, ticket.category);
+
+  await db.tickets.update(ticketId, {
+    business_duration_minutes: businessMinutes,
+    sla_status: businessMinutes <= threshold ? 'on_time' : 'breached',
+  });
+}
+```
+
+---
+
+### 8.5 Raporlarda Kullanım
+
+```sql
+-- SLA Raporu (grup bazlı özet)
+SELECT
+  COALESCE(c.name, zg.name)   AS group_display_name,
+  COUNT(*)                     AS total,
+  COUNT(*) FILTER (WHERE t.sla_status = 'on_time')  AS on_time,
+  COUNT(*) FILTER (WHERE t.sla_status = 'breached') AS breached,
+  ROUND(AVG(t.business_duration_minutes), 0)        AS avg_business_minutes,
+  ROUND(
+    100.0 * COUNT(*) FILTER (WHERE t.sla_status = 'on_time') / COUNT(*), 1
+  )                            AS sla_pct
+FROM tickets t
+JOIN zendesk_groups zg ON zg.id = t.group_id
+LEFT JOIN clubs c ON c.id = zg.club_id
+WHERE t.solved_at IS NOT NULL
+  AND t.created_at BETWEEN :start AND :end
+  AND (:category IS NULL
+       OR COALESCE(t.category_hq, t.category_ms, t.category_internal) = :category)
+GROUP BY COALESCE(c.name, zg.name), (zg.type = 'central')
+ORDER BY sla_pct ASC;
+```
+
+> **Açık ticketlarda:** `sla_status` NULL'dur. Açık ticket için "anlık iş saati süresi" göstermek istenirse `calculateBusinessMinutes(ticket.created_at, NOW(), ...)` API katmanında hesaplanabilir; DB'ye yazılmaz.
 
 ---
 
@@ -484,12 +658,19 @@ CREATE TABLE clubs (
 
 -- Zendesk grupları tablosu
 CREATE TABLE zendesk_groups (
-  id            BIGINT PRIMARY KEY,
-  name          VARCHAR(200) NOT NULL,   -- "KM-KMY Buyaka", "Yazılım 1"
-  type          VARCHAR(20) NOT NULL,    -- 'club_staff' | 'club_management' | 'central'
-  club_id       INT REFERENCES clubs(id) -- NULL ise merkezi grup
+  id                      BIGINT PRIMARY KEY,
+  name                    VARCHAR(200) NOT NULL,   -- "KM-KMY Buyaka", "Yazılım 1"
+  type                    VARCHAR(20)  NOT NULL,   -- 'club_staff' | 'club_management' | 'central'
+  club_id                 INT REFERENCES clubs(id), -- NULL ise merkezi grup
+  -- İş saati tanımı (grup başına farklılaşabilir)
+  -- Örnek: {"mon":{"start":"09:00","end":"18:00"},"sat":{"start":"10:00","end":"15:00"}}
+  -- Kapalı gün: ilgili key yok
+  working_hours           JSONB,
+  working_minutes_per_day INTEGER NOT NULL DEFAULT 480  -- 8 saat = 480 dk (varsayılan)
 );
 ```
+
+> **working_minutes_per_day neden ayrı?** Günlük toplam iş dakikasını JSONB parse etmeden hızlıca almak için denormalize tutulur. İkisi de admin ekranından düzenlenebilir.
 
 `type` belirleme mantığı:
 ```typescript
@@ -596,15 +777,17 @@ Authorization: Basic {email/token}
 |---|---|---|
 | 1 | Webhook receiver endpoint (imza doğrulama + 200) | 🔴 Kritik |
 | 2 | `tickets` + `ticket_lifecycle` tablolarının oluşturulması | 🔴 Kritik |
-| 3 | Event processor (ticket upsert + lifecycle insert) | 🔴 Kritik |
+| 3 | Event processor (ticket upsert + lifecycle insert + snooze kayıt) | 🔴 Kritik |
 | 4 | `GET /api/reports/tickets` endpointi | 🔴 Kritik |
 | 5 | `GET /api/reports/dashboard` endpointi | 🔴 Kritik |
 | 6 | Zendesk'te test webhook'u kurulumu + canlı test | 🔴 Kritik |
-| 7 | `GET /api/reports/agents` endpointi | 🟡 Önemli |
-| 8 | `GET /api/reports/sla` endpointi | 🟡 Önemli |
-| 9 | `GET /api/tickets/:id/lifecycle` endpointi | 🟡 Önemli |
-| 10 | Kulüp / group / agent lookup tabloları senkronizasyonu | 🟢 Sonraki aşama |
-| 11 | Kategori bazlı SLA eşik kuralları tablosu | 🟢 Sonraki aşama |
+| 7 | `calculateBusinessMinutes()` servisi + `tickets.business_duration_minutes` yazımı | 🔴 Kritik |
+| 8 | `zendesk_groups.working_hours` tanımlaması (admin panel veya seed) | 🔴 Kritik |
+| 9 | `GET /api/reports/agents` endpointi | 🟡 Önemli |
+| 10 | `GET /api/reports/sla` endpointi | 🟡 Önemli |
+| 11 | `GET /api/tickets/:id/lifecycle` endpointi | 🟡 Önemli |
+| 12 | Kulüp / group / agent lookup tabloları senkronizasyonu | 🟢 Sonraki aşama |
+| 13 | `sla_rules` tablosu — kategori + grup bazlı eşik tanımları | 🟢 Sonraki aşama |
 
 ---
 
