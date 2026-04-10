@@ -401,7 +401,7 @@ export default function DestekDashboardPage() {
           </div>
         </div>
 
-        <div className="overflow-auto">
+        <div className="overflow-x-auto">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
