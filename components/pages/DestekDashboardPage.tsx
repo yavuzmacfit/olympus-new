@@ -1,86 +1,88 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TicketIcon, ChevronUp, ChevronDown, ChevronsUpDown, Search, CalendarDays } from "lucide-react";
+import { TicketIcon, ChevronUp, ChevronDown, ChevronsUpDown, CalendarDays, X } from "lucide-react";
 
-/* ─── Kulüp verisi (gerçek liste, mock ticket sayıları) ─────── */
-interface ClubRow {
+/* ─── Veri tipleri ──────────────────────────────────────────── */
+interface Row {
   id: number;
   name: string;
-  city: string;
-  type: "MACFit" | "MAC/One";
+  isClub: boolean;           // true = kulüp, false = merkezi grup
   open: number;
   closed: number;
   created: number;
-  assigned: number;   // üstlenilmiş & closed değil
-  unassigned: number; // üstlenilmemiş & closed değil
+  assigned: number;
+  unassigned: number;
   avgOpenHours: number;
   slaCompliance: number;
 }
 
-// Baz veri = GÜNLÜK (created: 30-40/kulüp, open: günün bir kısmı kapanmadan kalır)
-// assigned = üstlenilmiş & closed değil | unassigned = üstlenilmemiş & closed değil
-const CLUBS: ClubRow[] = [
-  { id: 22,  name: "Akbatı",                   city: "İstanbul", type: "MACFit",  open: 18, closed: 22, created: 40,  assigned: 11, unassigned: 7,  avgOpenHours: 52, slaCompliance: 72 },
-  { id: 6,   name: "Mall of Istanbul",          city: "İstanbul", type: "MACFit",  open: 16, closed: 21, created: 37,  assigned: 10, unassigned: 6,  avgOpenHours: 48, slaCompliance: 75 },
-  { id: 11,  name: "Axis Kağıthane",            city: "İstanbul", type: "MACFit",  open: 15, closed: 20, created: 35,  assigned: 8,  unassigned: 7,  avgOpenHours: 61, slaCompliance: 68 },
-  { id: 2,   name: "Ankamall",                  city: "Ankara",   type: "MACFit",  open: 14, closed: 20, created: 34,  assigned: 9,  unassigned: 5,  avgOpenHours: 44, slaCompliance: 79 },
-  { id: 21,  name: "Armada",                    city: "Ankara",   type: "MACFit",  open: 13, closed: 21, created: 34,  assigned: 9,  unassigned: 4,  avgOpenHours: 39, slaCompliance: 82 },
-  { id: 34,  name: "Maltepe Pasco Plaza",       city: "İstanbul", type: "MACFit",  open: 12, closed: 20, created: 32,  assigned: 7,  unassigned: 5,  avgOpenHours: 55, slaCompliance: 71 },
-  { id: 3,   name: "Buyaka",                    city: "İstanbul", type: "MACFit",  open: 11, closed: 22, created: 33,  assigned: 8,  unassigned: 3,  avgOpenHours: 33, slaCompliance: 88 },
-  { id: 14,  name: "Fulya",                     city: "İstanbul", type: "MACFit",  open: 11, closed: 20, created: 31,  assigned: 7,  unassigned: 4,  avgOpenHours: 42, slaCompliance: 80 },
-  { id: 23,  name: "Kanyon",                    city: "İstanbul", type: "MAC/One", open: 10, closed: 23, created: 33,  assigned: 8,  unassigned: 2,  avgOpenHours: 29, slaCompliance: 91 },
-  { id: 9,   name: "Forum Kidsmall",            city: "İzmir",    type: "MACFit",  open: 10, closed: 20, created: 30,  assigned: 5,  unassigned: 5,  avgOpenHours: 67, slaCompliance: 66 },
-  { id: 32,  name: "Kocaeli Gebze Center",      city: "Kocaeli",  type: "MACFit",  open: 9,  closed: 21, created: 30,  assigned: 6,  unassigned: 3,  avgOpenHours: 38, slaCompliance: 83 },
-  { id: 13,  name: "Metrogarden",               city: "İstanbul", type: "MACFit",  open: 9,  closed: 21, created: 30,  assigned: 6,  unassigned: 3,  avgOpenHours: 45, slaCompliance: 77 },
-  { id: 1,   name: "Anadolu Hisarı",            city: "İstanbul", type: "MACFit",  open: 8,  closed: 22, created: 30,  assigned: 6,  unassigned: 2,  avgOpenHours: 31, slaCompliance: 89 },
-  { id: 33,  name: "Antalya Lara Carrefour",    city: "Antalya",  type: "MACFit",  open: 8,  closed: 22, created: 30,  assigned: 4,  unassigned: 4,  avgOpenHours: 58, slaCompliance: 70 },
-  { id: 29,  name: "Cadde",                     city: "İstanbul", type: "MACFit",  open: 7,  closed: 23, created: 30,  assigned: 5,  unassigned: 2,  avgOpenHours: 36, slaCompliance: 84 },
-  { id: 25,  name: "Panora",                    city: "Ankara",   type: "MAC/One", open: 7,  closed: 24, created: 31,  assigned: 6,  unassigned: 1,  avgOpenHours: 27, slaCompliance: 93 },
-  { id: 15,  name: "Bursa Podyumpark",          city: "Bursa",    type: "MACFit",  open: 7,  closed: 23, created: 30,  assigned: 5,  unassigned: 2,  avgOpenHours: 41, slaCompliance: 81 },
-  { id: 31,  name: "Kartal",                    city: "İstanbul", type: "MACFit",  open: 6,  closed: 24, created: 30,  assigned: 5,  unassigned: 1,  avgOpenHours: 22, slaCompliance: 94 },
-  { id: 8,   name: "Vialand",                   city: "İstanbul", type: "MACFit",  open: 6,  closed: 24, created: 30,  assigned: 4,  unassigned: 2,  avgOpenHours: 49, slaCompliance: 76 },
-  { id: 12,  name: "Adana Optimum",             city: "Adana",    type: "MACFit",  open: 6,  closed: 24, created: 30,  assigned: 3,  unassigned: 3,  avgOpenHours: 53, slaCompliance: 73 },
-  { id: 35,  name: "Podium",                    city: "Ankara",   type: "MACFit",  open: 5,  closed: 25, created: 30,  assigned: 4,  unassigned: 1,  avgOpenHours: 19, slaCompliance: 95 },
-  { id: 28,  name: "Ortaköy Lotus",             city: "İstanbul", type: "MAC/One", open: 5,  closed: 26, created: 31,  assigned: 4,  unassigned: 1,  avgOpenHours: 24, slaCompliance: 92 },
-  { id: 20,  name: "Ömür Plaza",                city: "İstanbul", type: "MACFit",  open: 5,  closed: 25, created: 30,  assigned: 3,  unassigned: 2,  avgOpenHours: 44, slaCompliance: 78 },
-  { id: 5,   name: "Ormanada",                  city: "İstanbul", type: "MAC/One", open: 4,  closed: 26, created: 30,  assigned: 3,  unassigned: 1,  avgOpenHours: 18, slaCompliance: 97 },
-  { id: 17,  name: "A Plus",                    city: "İstanbul", type: "MAC/One", open: 3,  closed: 27, created: 30,  assigned: 2,  unassigned: 1,  avgOpenHours: 15, slaCompliance: 98 },
+/* ─── Mock veri ─────────────────────────────────────────────── */
+const CLUBS: Row[] = [
+  { id: 22, name: "Akbatı",                isClub: true,  open: 18, closed: 22, created: 40,  assigned: 11, unassigned: 7,  avgOpenHours: 52, slaCompliance: 72 },
+  { id: 6,  name: "Mall of Istanbul",      isClub: true,  open: 16, closed: 21, created: 37,  assigned: 10, unassigned: 6,  avgOpenHours: 48, slaCompliance: 75 },
+  { id: 11, name: "Axis Kağıthane",        isClub: true,  open: 15, closed: 20, created: 35,  assigned: 8,  unassigned: 7,  avgOpenHours: 61, slaCompliance: 68 },
+  { id: 2,  name: "Ankamall",              isClub: true,  open: 14, closed: 20, created: 34,  assigned: 9,  unassigned: 5,  avgOpenHours: 44, slaCompliance: 79 },
+  { id: 21, name: "Armada",                isClub: true,  open: 13, closed: 21, created: 34,  assigned: 9,  unassigned: 4,  avgOpenHours: 39, slaCompliance: 82 },
+  { id: 34, name: "Maltepe Pasco Plaza",   isClub: true,  open: 12, closed: 20, created: 32,  assigned: 7,  unassigned: 5,  avgOpenHours: 55, slaCompliance: 71 },
+  { id: 3,  name: "Buyaka",                isClub: true,  open: 11, closed: 22, created: 33,  assigned: 8,  unassigned: 3,  avgOpenHours: 33, slaCompliance: 88 },
+  { id: 14, name: "Fulya",                 isClub: true,  open: 11, closed: 20, created: 31,  assigned: 7,  unassigned: 4,  avgOpenHours: 42, slaCompliance: 80 },
+  { id: 23, name: "Kanyon",                isClub: true,  open: 10, closed: 23, created: 33,  assigned: 8,  unassigned: 2,  avgOpenHours: 29, slaCompliance: 91 },
+  { id: 9,  name: "Forum Kidsmall",        isClub: true,  open: 10, closed: 20, created: 30,  assigned: 5,  unassigned: 5,  avgOpenHours: 67, slaCompliance: 66 },
+  { id: 32, name: "Kocaeli Gebze Center",  isClub: true,  open: 9,  closed: 21, created: 30,  assigned: 6,  unassigned: 3,  avgOpenHours: 38, slaCompliance: 83 },
+  { id: 13, name: "Metrogarden",           isClub: true,  open: 9,  closed: 21, created: 30,  assigned: 6,  unassigned: 3,  avgOpenHours: 45, slaCompliance: 77 },
+  { id: 1,  name: "Anadolu Hisarı",        isClub: true,  open: 8,  closed: 22, created: 30,  assigned: 6,  unassigned: 2,  avgOpenHours: 31, slaCompliance: 89 },
+  { id: 33, name: "Antalya Lara Carrefour",isClub: true,  open: 8,  closed: 22, created: 30,  assigned: 4,  unassigned: 4,  avgOpenHours: 58, slaCompliance: 70 },
+  { id: 29, name: "Cadde",                 isClub: true,  open: 7,  closed: 23, created: 30,  assigned: 5,  unassigned: 2,  avgOpenHours: 36, slaCompliance: 84 },
+  { id: 25, name: "Panora",                isClub: true,  open: 7,  closed: 24, created: 31,  assigned: 6,  unassigned: 1,  avgOpenHours: 27, slaCompliance: 93 },
+  { id: 15, name: "Bursa Podyumpark",      isClub: true,  open: 7,  closed: 23, created: 30,  assigned: 5,  unassigned: 2,  avgOpenHours: 41, slaCompliance: 81 },
+  { id: 31, name: "Kartal",                isClub: true,  open: 6,  closed: 24, created: 30,  assigned: 5,  unassigned: 1,  avgOpenHours: 22, slaCompliance: 94 },
+  { id: 8,  name: "Vialand",               isClub: true,  open: 6,  closed: 24, created: 30,  assigned: 4,  unassigned: 2,  avgOpenHours: 49, slaCompliance: 76 },
+  { id: 12, name: "Adana Optimum",         isClub: true,  open: 6,  closed: 24, created: 30,  assigned: 3,  unassigned: 3,  avgOpenHours: 53, slaCompliance: 73 },
+  { id: 35, name: "Podium",                isClub: true,  open: 5,  closed: 25, created: 30,  assigned: 4,  unassigned: 1,  avgOpenHours: 19, slaCompliance: 95 },
+  { id: 28, name: "Ortaköy Lotus",         isClub: true,  open: 5,  closed: 26, created: 31,  assigned: 4,  unassigned: 1,  avgOpenHours: 24, slaCompliance: 92 },
+  { id: 20, name: "Ömür Plaza",            isClub: true,  open: 5,  closed: 25, created: 30,  assigned: 3,  unassigned: 2,  avgOpenHours: 44, slaCompliance: 78 },
+  { id: 5,  name: "Ormanada",              isClub: true,  open: 4,  closed: 26, created: 30,  assigned: 3,  unassigned: 1,  avgOpenHours: 18, slaCompliance: 97 },
+  { id: 17, name: "A Plus",                isClub: true,  open: 3,  closed: 27, created: 30,  assigned: 2,  unassigned: 1,  avgOpenHours: 15, slaCompliance: 98 },
+  // Merkezi gruplar
+  { id: 101, name: "MAC Ürün Yönetimi",   isClub: false, open: 9,  closed: 18, created: 27,  assigned: 7,  unassigned: 2,  avgOpenHours: 38, slaCompliance: 81 },
+  { id: 102, name: "MAC Teknik Destek",   isClub: false, open: 7,  closed: 15, created: 22,  assigned: 5,  unassigned: 2,  avgOpenHours: 44, slaCompliance: 74 },
+  { id: 103, name: "MAC Üyelik",          isClub: false, open: 6,  closed: 20, created: 26,  assigned: 6,  unassigned: 0,  avgOpenHours: 28, slaCompliance: 88 },
+  { id: 104, name: "MAC Finans",          isClub: false, open: 4,  closed: 14, created: 18,  assigned: 3,  unassigned: 1,  avgOpenHours: 52, slaCompliance: 70 },
+  { id: 105, name: "MAC Tesis",           isClub: false, open: 5,  closed: 16, created: 21,  assigned: 4,  unassigned: 1,  avgOpenHours: 35, slaCompliance: 83 },
+  { id: 106, name: "Yazılım 1",           isClub: false, open: 3,  closed: 12, created: 15,  assigned: 3,  unassigned: 0,  avgOpenHours: 22, slaCompliance: 92 },
 ];
 
-type SortKey  = "open" | "closed" | "created" | "assigned" | "unassigned" | "avgOpenHours" | "slaCompliance";
-type SortDir  = "asc" | "desc";
-type Period   = "bugun" | "haftalik" | "aylik" | "ozel";
+const ALL_NAMES        = CLUBS.map(r => r.name);
+const CLUB_NAMES       = CLUBS.filter(r => r.isClub).map(r => r.name);
+const CENTRAL_NAMES    = CLUBS.filter(r => !r.isClub).map(r => r.name);
+
+/* ─── Tipler ────────────────────────────────────────────────── */
+type SortKey = "open" | "closed" | "created" | "assigned" | "unassigned" | "avgOpenHours" | "slaCompliance";
+type SortDir = "asc" | "desc";
+type Period  = "bugun" | "haftalik" | "aylik" | "ozel";
 
 const PERIOD_LABELS: Record<Period, string> = {
-  bugun:    "Bugün",
-  haftalik: "Bu Hafta",
-  aylik:    "Bu Ay",
-  ozel:     "Özel Aralık",
+  bugun: "Bugün", haftalik: "Bu Hafta", aylik: "Bu Ay", ozel: "Özel Aralık",
 };
 
-// Aylık baz veriyi periyoda göre ölçekle
 function scaleByPeriod(val: number, factor: number) {
   return Math.max(1, Math.round(val * factor));
 }
 
 function periodFactor(period: Period, customStart: string, customEnd: string): number {
-  if (period === "bugun")    return 1;   // baz veri zaten günlük
+  if (period === "bugun")    return 1;
   if (period === "haftalik") return 7;
   if (period === "aylik")    return 30;
-  // özel: seçilen gün sayısı
   if (customStart && customEnd) {
-    const ms   = new Date(customEnd).getTime() - new Date(customStart).getTime();
-    const days = Math.max(1, Math.round(ms / 86400000) + 1);
-    return days;
+    const ms = new Date(customEnd).getTime() - new Date(customStart).getTime();
+    return Math.max(1, Math.round(ms / 86400000) + 1);
   }
   return 1;
 }
 
 function periodSubLabel(period: Period, customStart: string, customEnd: string): string {
-  if (period === "bugun") {
-    return new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
-  }
+  if (period === "bugun") return new Date().toLocaleDateString("tr-TR", { day: "2-digit", month: "long", year: "numeric" });
   if (period === "haftalik") return "son 7 gün";
   if (period === "aylik")    return "son 30 gün";
   if (customStart && customEnd) return `${customStart} – ${customEnd}`;
@@ -89,8 +91,7 @@ function periodSubLabel(period: Period, customStart: string, customEnd: string):
 
 function fmtHours(h: number) {
   if (h < 24) return `${h} saat`;
-  const d = Math.floor(h / 24);
-  const rem = h % 24;
+  const d = Math.floor(h / 24), rem = h % 24;
   return rem > 0 ? `${d}g ${rem}s` : `${d} gün`;
 }
 
@@ -120,23 +121,147 @@ function OpenBar({ value, max }: { value: number; max: number }) {
   );
 }
 
+/* ─── Gruplu Birim Dropdown ─────────────────────────────────── */
+function BirimDropdown({
+  selected, onToggle, onClear,
+}: {
+  selected: string[];
+  onToggle: (name: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen]     = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredClubs   = CLUB_NAMES.filter(n => n.toLowerCase().includes(search.toLowerCase()));
+  const filteredCentral = CENTRAL_NAMES.filter(n => n.toLowerCase().includes(search.toLowerCase()));
+
+  const label = selected.length === 0
+    ? "Tüm Birimler"
+    : selected.length === 1
+    ? selected[0]
+    : `${selected.length} birim seçili`;
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(p => !p)}
+        className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white hover:bg-slate-50 min-w-[200px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      >
+        <span className={selected.length ? "text-slate-700 font-medium" : "text-slate-400"}>
+          {label}
+        </span>
+        <div className="flex items-center gap-1 shrink-0">
+          {selected.length > 0 && (
+            <span
+              onClick={e => { e.stopPropagation(); onClear(); }}
+              className="text-slate-400 hover:text-slate-600 cursor-pointer"
+            >
+              <X className="w-3 h-3" />
+            </span>
+          )}
+          <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
+          </svg>
+        </div>
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-xl w-64">
+          {/* Arama */}
+          <div className="p-2 border-b border-slate-100">
+            <input
+              autoFocus
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              placeholder="Birim ara..."
+              className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div className="max-h-72 overflow-y-auto">
+            {/* Kulüpler bölümü */}
+            {filteredClubs.length > 0 && (
+              <>
+                <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📍 Kulüpler</span>
+                  <button
+                    onClick={() => filteredClubs.forEach(n => { if (!selected.includes(n)) onToggle(n); })}
+                    className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium"
+                  >
+                    Tümünü seç
+                  </button>
+                </div>
+                {filteredClubs.map(name => (
+                  <label key={name} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                    <input type="checkbox" checked={selected.includes(name)} onChange={() => onToggle(name)}
+                      className="accent-indigo-600 w-3.5 h-3.5 shrink-0" />
+                    <span className="text-xs text-slate-700">{name}</span>
+                  </label>
+                ))}
+              </>
+            )}
+
+            {/* Merkezi Gruplar bölümü */}
+            {filteredCentral.length > 0 && (
+              <>
+                <div className="flex items-center justify-between px-3 pt-3 pb-1 border-t border-slate-100 mt-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">🏢 Merkezi Gruplar</span>
+                  <button
+                    onClick={() => filteredCentral.forEach(n => { if (!selected.includes(n)) onToggle(n); })}
+                    className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium"
+                  >
+                    Tümünü seç
+                  </button>
+                </div>
+                {filteredCentral.map(name => (
+                  <label key={name} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                    <input type="checkbox" checked={selected.includes(name)} onChange={() => onToggle(name)}
+                      className="accent-indigo-600 w-3.5 h-3.5 shrink-0" />
+                    <span className="text-xs text-slate-700">{name}</span>
+                  </label>
+                ))}
+              </>
+            )}
+
+            {filteredClubs.length === 0 && filteredCentral.length === 0 && (
+              <p className="px-3 py-4 text-xs text-slate-400 text-center">Sonuç bulunamadı</p>
+            )}
+          </div>
+
+          {/* Alt bar */}
+          <div className="flex items-center justify-between px-3 py-2 border-t border-slate-100">
+            <span className="text-[10px] text-slate-400">{selected.length} birim seçili</span>
+            <button onClick={() => { onClear(); setSearch(""); }} className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium">
+              Temizle
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Ana bileşen ────────────────────────────────────────────── */
 export default function DestekDashboardPage() {
-  const [sortKey, setSortKey]   = useState<SortKey>("open");
-  const [sortDir, setSortDir]   = useState<SortDir>("desc");
-  const [period, setPeriod]         = useState<Period>("bugun");
+  const [sortKey, setSortKey]         = useState<SortKey>("open");
+  const [sortDir, setSortDir]         = useState<SortDir>("desc");
+  const [period, setPeriod]           = useState<Period>("bugun");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd]     = useState("");
-  const [clubSearch, setClubSearch] = useState("");
-  const [page, setPage] = useState(1);
+  const [selectedBirim, setSelectedBirim] = useState<string[]>([]);
+  const [page, setPage]               = useState(1);
   const PAGE_SIZE = 10;
+
+  const toggleBirim = (name: string) =>
+    setSelectedBirim(prev => prev.includes(name) ? prev.filter(x => x !== name) : [...prev, name]);
 
   const factor = useMemo(
     () => periodFactor(period, customStart, customEnd),
     [period, customStart, customEnd]
   );
 
-  // Ölçeklenmiş kulüp verisi
-  const scaledClubs = useMemo(() =>
+  const scaledRows = useMemo(() =>
     CLUBS.map(c => ({
       ...c,
       open:       scaleByPeriod(c.open, factor),
@@ -148,9 +273,8 @@ export default function DestekDashboardPage() {
     [factor]
   );
 
-
-  const sorted = [...scaledClubs]
-    .filter(c => !clubSearch || c.name.toLowerCase().includes(clubSearch.toLowerCase()))
+  const sorted = [...scaledRows]
+    .filter(r => selectedBirim.length === 0 || selectedBirim.includes(r.name))
     .sort((a, b) => {
       const diff = a[sortKey] - b[sortKey];
       return sortDir === "desc" ? -diff : diff;
@@ -161,14 +285,16 @@ export default function DestekDashboardPage() {
   const paged      = sorted.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
   const maxOpen    = Math.max(...sorted.map(c => c.open), 1);
 
-  const totalOpen    = scaledClubs.reduce((s, c) => s + c.open, 0);
-  const totalClosed  = scaledClubs.reduce((s, c) => s + c.closed, 0);
-  const totalCreated = scaledClubs.reduce((s, c) => s + c.created, 0);
-  const avgOpen      = Math.round(CLUBS.reduce((s, c) => s + c.avgOpenHours, 0) / CLUBS.length);
-  const avgSla       = Math.round(CLUBS.reduce((s, c) => s + c.slaCompliance, 0) / CLUBS.length);
-  const breachCount  = CLUBS.filter(c => c.slaCompliance < 75).length;
-  const worstClub    = [...scaledClubs].sort((a, b) => b.open - a.open)[0];
-  const subLabel     = periodSubLabel(period, customStart, customEnd);
+  // Özet metrikler: sadece kulüpleri baz al
+  const clubRows   = scaledRows.filter(r => r.isClub);
+  const totalOpen  = scaledRows.reduce((s, c) => s + c.open, 0);
+  const totalClosed  = scaledRows.reduce((s, c) => s + c.closed, 0);
+  const totalCreated = scaledRows.reduce((s, c) => s + c.created, 0);
+  const avgOpen    = Math.round(clubRows.reduce((s, c) => s + c.avgOpenHours, 0) / clubRows.length);
+  const avgSla     = Math.round(clubRows.reduce((s, c) => s + c.slaCompliance, 0) / clubRows.length);
+  const breachCount = clubRows.filter(c => c.slaCompliance < 75).length;
+  const worstClub  = [...clubRows].sort((a, b) => b.open - a.open)[0];
+  const subLabel   = periodSubLabel(period, customStart, customEnd);
 
   const handleSort = (key: SortKey) => {
     if (sortKey === key) setSortDir(d => d === "desc" ? "asc" : "desc");
@@ -186,7 +312,7 @@ export default function DestekDashboardPage() {
   return (
     <div className="flex flex-col gap-5 p-6 h-full w-full overflow-y-auto bg-[#f5f8fa]">
 
-      {/* ── Periyod seçici ───────────────────────────────────── */}
+      {/* ── Periyod seçici ─────────────────────────────────────── */}
       <div className="flex items-center gap-2 flex-wrap">
         <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
         <div className="flex gap-1">
@@ -206,64 +332,58 @@ export default function DestekDashboardPage() {
               className="px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-red-200" />
           </div>
         )}
-        {subLabel && (
-          <span className="text-xs text-slate-400 ml-1">{subLabel}</span>
-        )}
+        {subLabel && <span className="text-xs text-slate-400 ml-1">{subLabel}</span>}
       </div>
 
-      {/* ── Özet kartlar ─────────────────────────────────────── */}
+      {/* ── Özet kartlar ───────────────────────────────────────── */}
       <div className="grid grid-cols-6 gap-3">
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4 col-span-1">
+        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Toplam Açık</p>
           <p className="text-2xl font-bold text-red-500">{totalOpen}</p>
           <p className="text-[10px] text-slate-400 mt-1">{PERIOD_LABELS[period].toLowerCase()}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4 col-span-1">
+        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Toplam Kapalı</p>
           <p className="text-2xl font-bold text-emerald-600">{totalClosed}</p>
           <p className="text-[10px] text-slate-400 mt-1">{PERIOD_LABELS[period].toLowerCase()}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4 col-span-1">
+        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Toplam Oluşturulan</p>
           <p className="text-2xl font-bold text-slate-700">{totalCreated}</p>
           <p className="text-[10px] text-slate-400 mt-1">{PERIOD_LABELS[period].toLowerCase()}</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4 col-span-1">
+        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Ort. Açık Kalma</p>
           <p className="text-2xl font-bold text-amber-600">{fmtHours(avgOpen)}</p>
           <p className="text-[10px] text-slate-400 mt-1">kulüp ortalaması</p>
         </div>
-        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4 col-span-1">
+        <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Ort. SLA Uyumu</p>
           <p className={`text-2xl font-bold ${avgSla >= 85 ? "text-emerald-600" : "text-amber-600"}`}>%{avgSla}</p>
           <p className="text-[10px] text-slate-400 mt-1">{breachCount} kulüp ihlalde</p>
         </div>
-        <div className="bg-white border border-red-100 rounded-xl px-4 py-4 col-span-1">
+        <div className="bg-white border border-red-100 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">En Yoğun Kulüp</p>
           <p className="text-sm font-bold text-slate-700 leading-tight">{worstClub.name}</p>
           <p className="text-[10px] text-red-500 mt-1">{worstClub.open} açık ticket</p>
         </div>
       </div>
 
-      {/* ── Arama ────────────────────────────────────────────── */}
-      <div className="flex items-center gap-3">
-        <div className="relative ml-auto">
-          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400" />
-          <input
-            value={clubSearch}
-            onChange={e => { setClubSearch(e.target.value); setPage(1); }}
-            placeholder="Kulüp ara..."
-            className="pl-8 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-indigo-200 w-44"
-          />
-        </div>
-        <span className="text-xs text-slate-400 shrink-0">{sorted.length} kulüp gösteriliyor</span>
+      {/* ── Birim filtresi ─────────────────────────────────────── */}
+      <div className="flex items-center justify-between">
+        <span className="text-xs text-slate-400">{sorted.length} birim gösteriliyor</span>
+        <BirimDropdown
+          selected={selectedBirim}
+          onToggle={name => { toggleBirim(name); setPage(1); }}
+          onClear={() => { setSelectedBirim([]); setPage(1); }}
+        />
       </div>
 
-      {/* ── Tablo ────────────────────────────────────────────── */}
+      {/* ── Tablo ──────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2">
           <TicketIcon className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-bold text-slate-700">Kulüp Bazlı Ticket Özeti</span>
+          <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
           <span className="text-xs text-slate-400 ml-1">— en çok açık ticketten en aza sıralı</span>
         </div>
 
@@ -272,7 +392,7 @@ export default function DestekDashboardPage() {
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
                 <th className="text-left px-4 py-3 font-semibold w-8">#</th>
-                <th className="text-left px-4 py-3 font-semibold">Kulüp</th>
+                <th className="text-left px-4 py-3 font-semibold">Birim</th>
                 <th className="text-left px-4 py-3 font-semibold cursor-pointer hover:text-slate-700 select-none" onClick={() => handleSort("open")}>
                   <div className="flex items-center gap-1">Açık <SortIcon k="open" /></div>
                 </th>
@@ -297,25 +417,28 @@ export default function DestekDashboardPage() {
               </tr>
             </thead>
             <tbody>
-              {paged.map((club, i) => (
-                <tr key={club.id} className={`border-b border-slate-50 hover:bg-indigo-50/30 transition-colors ${i % 2 === 1 ? "bg-slate-50/30" : ""}`}>
+              {paged.map((row, i) => (
+                <tr key={row.id} className={`border-b border-slate-50 hover:bg-indigo-50/30 transition-colors ${i % 2 === 1 ? "bg-slate-50/30" : ""}`}>
                   <td className="px-4 py-3 text-slate-400 font-mono text-[10px]">{(safePage - 1) * PAGE_SIZE + i + 1}</td>
-                  <td className="px-4 py-3 font-semibold text-slate-700">{club.name}</td>
                   <td className="px-4 py-3">
-                    <OpenBar value={club.open} max={maxOpen} />
+                    <div className="flex items-center gap-2">
+                      <span className="font-semibold text-slate-700">{row.name}</span>
+                      {!row.isClub && (
+                        <span className="text-[10px] font-medium text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">merkezi</span>
+                      )}
+                    </div>
                   </td>
-                  <td className="px-4 py-3 text-emerald-600 font-semibold">{club.closed}</td>
-                  <td className="px-4 py-3 text-slate-600">{club.created}</td>
-                  <td className="px-4 py-3 font-semibold text-amber-600">{club.assigned}</td>
-                  <td className="px-4 py-3 font-semibold text-red-500">{club.unassigned}</td>
+                  <td className="px-4 py-3"><OpenBar value={row.open} max={maxOpen} /></td>
+                  <td className="px-4 py-3 text-emerald-600 font-semibold">{row.closed}</td>
+                  <td className="px-4 py-3 text-slate-600">{row.created}</td>
+                  <td className="px-4 py-3 font-semibold text-amber-600">{row.assigned}</td>
+                  <td className="px-4 py-3 font-semibold text-red-500">{row.unassigned}</td>
                   <td className="px-4 py-3">
-                    <span className={`font-semibold ${club.avgOpenHours > 48 ? "text-red-500" : club.avgOpenHours > 24 ? "text-amber-600" : "text-emerald-600"}`}>
-                      {fmtHours(club.avgOpenHours)}
+                    <span className={`font-semibold ${row.avgOpenHours > 48 ? "text-red-500" : row.avgOpenHours > 24 ? "text-amber-600" : "text-emerald-600"}`}>
+                      {fmtHours(row.avgOpenHours)}
                     </span>
                   </td>
-                  <td className="px-4 py-3">
-                    <SlaBar value={club.slaCompliance} />
-                  </td>
+                  <td className="px-4 py-3"><SlaBar value={row.slaCompliance} /></td>
                 </tr>
               ))}
             </tbody>
@@ -326,19 +449,13 @@ export default function DestekDashboardPage() {
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
             <span className="text-xs text-slate-400">
-              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} / {sorted.length} kulüp
+              {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} / {sorted.length} birim
             </span>
             <div className="flex items-center gap-1">
-              <button
-                onClick={() => setPage(1)}
-                disabled={safePage === 1}
-                className="px-2 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >«</button>
-              <button
-                onClick={() => setPage(p => Math.max(1, p - 1))}
-                disabled={safePage === 1}
-                className="px-2.5 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >‹</button>
+              <button onClick={() => setPage(1)} disabled={safePage === 1}
+                className="px-2 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">«</button>
+              <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={safePage === 1}
+                className="px-2.5 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">‹</button>
               {Array.from({ length: totalPages }, (_, i) => i + 1)
                 .filter(n => n === 1 || n === totalPages || Math.abs(n - safePage) <= 1)
                 .reduce<(number | "...")[]>((acc, n, idx, arr) => {
@@ -348,25 +465,18 @@ export default function DestekDashboardPage() {
                 }, [])
                 .map((n, idx) =>
                   n === "..." ? (
-                    <span key={`ellipsis-${idx}`} className="px-1 text-xs text-slate-400">…</span>
+                    <span key={`e-${idx}`} className="px-1 text-xs text-slate-400">…</span>
                   ) : (
-                    <button
-                      key={n}
-                      onClick={() => setPage(n as number)}
-                      className={`px-2.5 py-1 text-xs rounded border transition-colors ${safePage === n ? "bg-[#CD3638] border-[#CD3638] text-white font-semibold" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}
-                    >{n}</button>
+                    <button key={n} onClick={() => setPage(n as number)}
+                      className={`px-2.5 py-1 text-xs rounded border transition-colors ${safePage === n ? "bg-[#CD3638] border-[#CD3638] text-white font-semibold" : "border-slate-200 text-slate-500 hover:bg-slate-50"}`}>
+                      {n}
+                    </button>
                   )
                 )}
-              <button
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                disabled={safePage === totalPages}
-                className="px-2.5 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >›</button>
-              <button
-                onClick={() => setPage(totalPages)}
-                disabled={safePage === totalPages}
-                className="px-2 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-              >»</button>
+              <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={safePage === totalPages}
+                className="px-2.5 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">›</button>
+              <button onClick={() => setPage(totalPages)} disabled={safePage === totalPages}
+                className="px-2 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
             </div>
           </div>
         )}
