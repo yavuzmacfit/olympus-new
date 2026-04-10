@@ -394,14 +394,15 @@ function getGroupType(groupName: string): 'management' | 'staff' {
 
 Zendesk'teki gruplar üç tipe ayrılır:
 
-| Tür | Örnekler | `club_id` |
-|---|---|---|
-| `club_staff` | `Buyaka`, `Tunalı`, `Ankamall` | dolu |
-| `club_management` | `KM-KMY Buyaka`, `KM-KMY Tunalı` | dolu |
-| `central` | `Yazılım 1`, `MAC Ürün Yönetimi` | NULL |
+| Tür | Örnekler | `club_id` | Dashboard'da |
+|---|---|---|---|
+| `club_staff` | `Buyaka`, `Tunalı` | dolu | Kulüp adı altında birleştirilir |
+| `club_management` | `KM-KMY Buyaka`, `KM-KMY Tunalı` | dolu | Kulüp adı altında birleştirilir |
+| `central` | `Yazılım 1`, `MAC Ürün Yönetimi` | NULL | Kendi adıyla ayrı satır |
 
-**Dashboard** yalnızca `club_staff` + `club_management` gruplarını kulüp bazında gösterir.
-**SLA / Agent raporu** tüm grupları (merkezi dahil) gösterir.
+**Dashboard kuralı:**
+- `club_staff` + `club_management` → aynı kulübün metrikleri → **tek satırda birleşir** (örn. `Buyaka`)
+- `central` → kendi grup adıyla ayrı satır olarak dashboard'da görünür
 
 ### 8.4 Veritabanı Şeması — Grup & Kulüp
 
@@ -438,15 +439,18 @@ function classifyGroup(groupName: string): 'club_management' | 'club_staff' | 'c
 > `CENTRAL_GROUPS` listesine eklenmeli. Sonrasında yeni grup eklendiğinde
 > sistem `club_staff` varsayar, gerekirse düzeltilebilir.
 
-### 8.5 Dashboard'da Kulüp Bazlı Gruplama
+### 8.5 Dashboard Sorgusu
 
-Dashboard "kulüp başına" göstereceği için sorgu her iki kulüp grubunu (staff + management)
-birleştirip kulüp adıyla gruplar. Merkezi gruplar (`central`) bu sorguda **dışlanır**.
+Dashboard iki farklı satır tipi gösterir:
+
+1. **Kulüp satırı** — `club_staff` + `club_management` birleştirilir, kulüp adıyla tek satır
+2. **Merkezi grup satırı** — `central` gruplar kendi adlarıyla ayrı satır
 
 ```sql
--- Kulüp bazlı özet (merkezi gruplar hariç)
+-- Dashboard: kulüp grupları birleştirilmiş + merkezi gruplar ayrı satır
 SELECT
-  c.name                           AS club_name,
+  COALESCE(c.name, zg.name)        AS display_name,   -- kulüp adı veya grup adı
+  zg.type = 'central'              AS is_central,
   COUNT(*) FILTER (WHERE t.status IN ('open','pending'))  AS open_count,
   COUNT(*) FILTER (WHERE t.status IN ('solved','closed')) AS closed_count,
   COUNT(*) FILTER (WHERE t.assignee_id IS NOT NULL
@@ -458,12 +462,22 @@ SELECT
   ), 1)                            AS avg_open_hours
 FROM tickets t
 JOIN zendesk_groups zg ON zg.id = t.group_id
-JOIN clubs c ON c.id = zg.club_id          -- club_id NULL olanlar (central) JOIN'den düşer
+LEFT JOIN clubs c ON c.id = zg.club_id   -- central'lar için NULL, LEFT JOIN ile kalır
 WHERE t.created_at BETWEEN :start AND :end
-  AND zg.type IN ('club_staff', 'club_management')  -- merkezi gruplar hariç
-GROUP BY c.name
+GROUP BY
+  COALESCE(c.name, zg.name),      -- kulüp adı veya grup adı üzerinden grupla
+  (zg.type = 'central')
 ORDER BY open_count DESC;
 ```
+
+**Örnek çıktı:**
+
+| display_name | is_central | open | closed | … |
+|---|---|---|---|---|
+| Buyaka | false | 12 | 45 | … |  ← club_staff + club_management birleşik
+| Tunalı | false | 8 | 30 | … |
+| MAC Ürün Yönetimi | true | 5 | 20 | … |  ← kendi satırı
+| Yazılım 1 | true | 3 | 11 | … |
 
 ### 8.6 SLA Raporu — Grup Tipi Ayrımı
 
