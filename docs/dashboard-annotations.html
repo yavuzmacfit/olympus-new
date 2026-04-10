@@ -326,8 +326,9 @@
       <div class="legend-num red-pin">2</div>
       <div class="legend-text">
         <strong>Toplam Açık</strong>
-        <p>Seçili dönemde henüz çözüme kavuşmamış ticket sayısı. <code>solved</code> ve <code>closed</code> dışındaki tüm statusler açık sayılır.<br>
-        <code>status IN ('new', 'open', 'pending', 'on-hold')</code><br>
+        <p>Seçili dönemde henüz çözüme kavuşmamış ticket sayısı.<br>
+        <code>solved</code> ve <code>closed</code> dışındaki her status açık sayılır — ileride Zendesk'e yeni bir status eklenirse otomatik kapsanır.<br>
+        <code>status NOT IN ('solved', 'closed')</code><br>
         Tüm birimler dahil. Kırmızı = dikkat gerektiriyor.</p>
       </div>
     </div>
