@@ -369,24 +369,20 @@ export default function DestekDashboardPage() {
         </div>
       </div>
 
-      {/* ── Birim filtresi ─────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400">{sorted.length} birim gösteriliyor</span>
-        <BirimDropdown
-          selected={selectedBirim}
-          onToggle={name => { toggleBirim(name); setPage(1); }}
-          onClear={() => { setSelectedBirim([]); setPage(1); }}
-        />
-      </div>
-
       {/* ── Tablo ──────────────────────────────────────────────── */}
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TicketIcon className="w-4 h-4 text-slate-400" />
             <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
-            <span className="text-xs text-slate-400 ml-1">— en çok açık ticketten en aza sıralı</span>
+            <span className="text-xs text-slate-400 ml-1">— {sorted.length} birim</span>
           </div>
+          <div className="flex items-center gap-2">
+            <BirimDropdown
+              selected={selectedBirim}
+              onToggle={name => { toggleBirim(name); setPage(1); }}
+              onClear={() => { setSelectedBirim([]); setPage(1); }}
+            />
           <button
             onClick={() => {
               const headers = ["Birim", "Açık", "Kapalı", "Toplam", "Üstlenilmiş", "Üstlenilmemiş", "Ort. Açık Kalma (saat)", "SLA %"];
@@ -402,6 +398,7 @@ export default function DestekDashboardPage() {
           >
             <Download className="w-3.5 h-3.5" />
           </button>
+          </div>
         </div>
 
         <div className="overflow-auto">
