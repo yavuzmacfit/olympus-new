@@ -310,10 +310,10 @@ export default function DestekDashboardPage() {
   };
 
   return (
-    <div className="flex flex-col gap-5 p-6 h-full w-full overflow-y-auto bg-[#f5f8fa]">
+    <div className="flex flex-col gap-5 p-6 h-full w-full min-h-0 bg-[#f5f8fa]">
 
       {/* ── Periyod seçici ─────────────────────────────────────── */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap shrink-0">
         <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
         <div className="flex gap-1">
           {(["bugun", "haftalik", "aylik", "ozel"] as Period[]).map(p => (
@@ -336,7 +336,7 @@ export default function DestekDashboardPage() {
       </div>
 
       {/* ── Özet kartlar ───────────────────────────────────────── */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-6 gap-3 shrink-0">
         <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Toplam Açık</p>
           <p className="text-2xl font-bold text-red-500">{totalOpen}</p>
@@ -370,8 +370,8 @@ export default function DestekDashboardPage() {
       </div>
 
       {/* ── Tablo ──────────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
-        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <TicketIcon className="w-4 h-4 text-slate-400" />
             <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
@@ -401,7 +401,7 @@ export default function DestekDashboardPage() {
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className="overflow-auto flex-1 min-h-0">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
@@ -460,7 +460,7 @@ export default function DestekDashboardPage() {
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 shrink-0">
             <span className="text-xs text-slate-400">
               {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} / {sorted.length} birim
             </span>
