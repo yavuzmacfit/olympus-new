@@ -113,14 +113,20 @@
   <div class="diagram">
     <div class="dash diagram-wrap">
 
-      <!-- Period bar -->
-      <div class="period-bar" style="position:relative;">
+      <!-- Period bar — filtre kutusu -->
+      <div style="background:white; border:1px solid #e2e8f0; border-radius:12px; padding:12px 16px; margin-bottom:16px; position:relative;">
         <div class="pin" style="top:-10px; left:-10px;">1</div>
-        <button class="period-btn active">Bugün</button>
-        <button class="period-btn">Bu Hafta</button>
-        <button class="period-btn">Bu Ay</button>
-        <button class="period-btn">Özel Aralık</button>
-        <span class="period-label">10 Nisan 2026</span>
+        <div style="font-size:9px; font-weight:700; color:#475569; text-transform:uppercase; letter-spacing:.06em; margin-bottom:10px;">Filtre</div>
+        <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap;">
+          <div style="display:flex; gap:4px;">
+            <button class="period-btn active">Bugün</button>
+            <button class="period-btn">Bu Hafta</button>
+            <button class="period-btn">Bu Ay</button>
+            <button class="period-btn">Özel Aralık</button>
+          </div>
+          <span class="period-label">10 Nisan 2026</span>
+          <div style="margin-left:auto; font-size:9px; color:#94a3b8; font-style:italic;">Anlık uygulanır — ayrı "Uygula" butonu yok</div>
+        </div>
       </div>
 
       <!-- Metric Cards -->
@@ -187,7 +193,40 @@
           </div>
           <div style="display:flex; align-items:center; gap:6px; position:relative;">
             <div class="pin" style="position:absolute; top:-10px; left:-10px; width:18px; height:18px; font-size:9px;">8</div>
-            <button class="filter-btn" style="position:relative;">Tüm Birimler ▾</button>
+            <!-- Dropdown açık hali -->
+            <div style="position:relative;">
+              <button class="filter-btn" style="min-width:160px; display:flex; justify-content:space-between; gap:8px;">
+                <span style="color:#94a3b8;">Tüm Birimler</span> <span>▴</span>
+              </button>
+              <div style="position:absolute; right:0; top:calc(100% + 4px); z-index:20; background:white; border:1px solid #e2e8f0; border-radius:12px; box-shadow:0 8px 24px rgba(0,0,0,.1); width:220px;">
+                <!-- Arama -->
+                <div style="padding:8px; border-bottom:1px solid #f1f5f9;">
+                  <input placeholder="Birim ara..." style="width:100%; padding:5px 10px; font-size:10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc; box-sizing:border-box;" readonly />
+                </div>
+                <div style="max-height:160px; overflow:hidden;">
+                  <!-- Kulüpler -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px 3px;">
+                    <span style="font-size:9px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em;">📍 Kulüpler</span>
+                    <span style="font-size:9px; color:#6366f1; font-weight:600;">Tümünü seç</span>
+                  </div>
+                  <div style="padding:2px 12px 3px; display:flex; align-items:center; gap:6px;"><input type="checkbox" style="accent-color:#6366f1;" /><span style="font-size:10px; color:#475569;">Akbatı</span></div>
+                  <div style="padding:2px 12px 3px; display:flex; align-items:center; gap:6px;"><input type="checkbox" style="accent-color:#6366f1;" /><span style="font-size:10px; color:#475569;">Mall of Istanbul</span></div>
+                  <div style="padding:2px 12px 3px; display:flex; align-items:center; gap:6px;"><input type="checkbox" style="accent-color:#6366f1;" /><span style="font-size:10px; color:#94a3b8; font-style:italic;">… 23 kulüp daha</span></div>
+                  <!-- Merkezi Gruplar -->
+                  <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px 3px; border-top:1px solid #f1f5f9; margin-top:4px;">
+                    <span style="font-size:9px; font-weight:700; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em;">🏢 Merkezi Gruplar</span>
+                    <span style="font-size:9px; color:#6366f1; font-weight:600;">Tümünü seç</span>
+                  </div>
+                  <div style="padding:2px 12px 3px; display:flex; align-items:center; gap:6px;"><input type="checkbox" style="accent-color:#6366f1;" /><span style="font-size:10px; color:#475569;">MAC Ürün Yönetimi</span></div>
+                  <div style="padding:2px 12px 3px; display:flex; align-items:center; gap:6px;"><input type="checkbox" style="accent-color:#6366f1;" /><span style="font-size:10px; color:#94a3b8; font-style:italic;">… 5 grup daha</span></div>
+                </div>
+                <!-- Alt bar -->
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:6px 12px; border-top:1px solid #f1f5f9;">
+                  <span style="font-size:9px; color:#94a3b8;">0 birim seçili</span>
+                  <span style="font-size:9px; color:#6366f1; font-weight:600;">Temizle</span>
+                </div>
+              </div>
+            </div>
             <div style="position:relative;">
               <div class="pin" style="position:absolute; top:-10px; right:-10px; width:18px; height:18px; font-size:9px;">17</div>
               <button title="CSV Dışa Aktar" style="display:flex; align-items:center; padding:5px; border:1px solid #e2e8f0; border-radius:8px; background:white; color:#64748b; cursor:default;">
@@ -291,8 +330,21 @@
           </div>
         </div>
 
-        <div style="padding: 8px 12px; font-size:10px; color:#94a3b8; text-align:center; border-top:1px solid #f1f5f9;">
-          … 28 satır daha · Sayfa 1 / 4
+        <!-- Pagination bar -->
+        <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 14px; border-top:1px solid #f1f5f9; position:relative;">
+          <div class="pin" style="position:absolute; top:-10px; left:8px; width:18px; height:18px; font-size:9px;">18</div>
+          <span style="font-size:10px; color:#94a3b8;">1–10 / 31 birim</span>
+          <div style="display:flex; align-items:center; gap:4px;">
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:6px; color:#94a3b8; cursor:default; opacity:0.4;">«</button>
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:6px; color:#94a3b8; cursor:default; opacity:0.4;">‹</button>
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #CD3638; border-radius:6px; background:#CD3638; color:white; font-weight:700; cursor:default;">1</button>
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:6px; color:#64748b; cursor:default;">2</button>
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:6px; color:#64748b; cursor:default;">3</button>
+            <span style="font-size:10px; color:#94a3b8;">…</span>
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:6px; color:#64748b; cursor:default;">4</button>
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:6px; color:#64748b; cursor:default;">›</button>
+            <button style="padding:3px 7px; font-size:10px; border:1px solid #e2e8f0; border-radius:6px; color:#64748b; cursor:default;">»</button>
+          </div>
         </div>
       </div>
 
@@ -308,9 +360,10 @@
     <div class="legend-item">
       <div class="legend-num">1</div>
       <div class="legend-text">
-        <strong>Periyod Seçici</strong>
-        <p>Tüm metrikler ve tablo bu periyoda göre filtrelenir.<br>
-        <code>Bugün</code> = son 24s · <code>Bu Hafta</code> = son 7 gün · <code>Bu Ay</code> = son 30 gün · <code>Özel Aralık</code> = tarih girişi.<br>
+        <strong>Periyod Seçici (Filtre)</strong>
+        <p>Dashboard'un tek filtresi — rapor sayfalarındaki gibi ayrı bir "Filtreleri Uygula" butonu <b>yoktur</b>; seçim anlık uygulanır.<br>
+        <code>Bugün</code> = son 24s · <code>Bu Hafta</code> = son 7 gün · <code>Bu Ay</code> = son 30 gün · <code>Özel Aralık</code> = tarih girişi<br>
+        Tüm özet kartlar ve tablo bu periyoda göre güncellenir.<br>
         API: <code>?period=daily|weekly|monthly</code> veya <code>?start_date=&amp;end_date=</code></p>
       </div>
     </div>
@@ -319,7 +372,10 @@
       <div class="legend-num">8</div>
       <div class="legend-text">
         <strong>Birim Seç (Filtre)</strong>
-        <p>Tablo başlık barında, export ikonunun solunda yer alır. Kulüpler ve Merkezi Gruplar ayrı bölümlerde listelenir, arama destekli. Seçim tabloyu filtreler. API'ye <code>?group_ids[]=</code> parametresi olarak gider.</p>
+        <p>Tablo başlık barında, export ikonunun solunda. Tıklanınca açılan listede iki grup bölümü:<br>
+        <b>📍 Kulüpler</b> — <code>zendesk_groups.type = 'club'</code><br>
+        <b>🏢 Merkezi Gruplar</b> — <code>zendesk_groups.type = 'central'</code><br>
+        Her bölümün "Tümünü seç" kısayolu var. Arama kutusu anlık filtreler. Seçim tablo satırlarını filtreler, API'ye <code>?group_ids[]=</code> olarak gider. Seçim sıfırlanınca tüm birimler gösterilir.</p>
       </div>
     </div>
 
@@ -390,6 +446,16 @@
         <strong>CSV Dışa Aktar</strong>
         <p>Aktif filtredeki tüm birimleri CSV olarak indirir.<br>
         Kolonlar: Birim, Açık, Kapalı, Toplam, Üstlenilmiş, Üstlenilmemiş, Ort. Açık Kalma, SLA %</p>
+      </div>
+    </div>
+
+    <div class="legend-item">
+      <div class="legend-num">18</div>
+      <div class="legend-text">
+        <strong>Pagination</strong>
+        <p>Tablo sayfalama — sayfa başına <code>10 birim</code>. Sol tarafta <code>X–Y / toplam</code> sayacı, sağda sayfa butonları.<br>
+        Aktif sayfa kırmızı ile gösterilir. Çok sayfa varsa ortada <code>…</code> kısaltması eklenir.<br>
+        Sıralama veya filtre değiştiğinde sayfa 1'e döner.</p>
       </div>
     </div>
 

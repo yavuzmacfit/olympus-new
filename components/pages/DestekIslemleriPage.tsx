@@ -355,11 +355,10 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
   let rows: string[][];
 
   if (tab === "ham") {
-    headers = ["Ticket ID","Konu","Durum","Öncelik","Grup","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Eskalasyon"];
+    headers = ["Ticket ID","Konu","Durum","Öncelik","Birim","Kategori","Oluşturulma Tarihi","Toplam Süre","Eskalasyon"];
     rows = tickets.map(t => [
       t.id, t.subject, STATUS_LABELS[t.status], t.priority,
-      t.group, t.updatedAt, t.totalDuration,
-      String(t.groupTransfers), String(t.agentChanges),
+      t.group, t.category, t.createdAt, t.totalDuration,
       t.escalated ? "Evet" : "Hayır",
     ]);
   } else if (tab === "agent") {
@@ -369,7 +368,7 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
       t.resolvedAt ?? "-", t.totalDuration, t.resolvingGroup ?? "-",
     ]);
   } else {
-    headers = ["Grup","Toplam Atanan Ticket","Zamanında Kapatılan","Geciktirilen","Ort. Bekleme Süresi","Ort. Çözüm Süresi (dk)","SLA %"];
+    headers = ["Birim","Toplam Atanan Ticket","Zamanında Kapatılan","Geciktirilen","Ort. Bekleme Süresi","Ort. Çözüm Süresi (dk)","SLA %"];
     const SLA_THRESHOLD = 3600;
     const groupMap: Record<string, Ticket[]> = {};
     tickets.forEach(t => { (groupMap[t.group] = groupMap[t.group] || []).push(t); });
@@ -424,7 +423,6 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
   const totalMinutes = tickets.reduce((s, t) => s + t.totalMinutes, 0);
   const avgMinutes   = tickets.length ? Math.round(totalMinutes / tickets.length) : 0;
   const avgH = Math.floor(avgMinutes / 60), avgM = avgMinutes % 60;
-  const avgTransfers = tickets.length ? (tickets.reduce((s,t) => s + t.groupTransfers, 0) / tickets.length).toFixed(1) : "0";
 
   return (
     <div className="flex h-full overflow-hidden">
@@ -432,14 +430,11 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
       <div className="flex-1 flex flex-col gap-4 overflow-y-auto overflow-x-hidden p-6 min-w-0">
 
       {/* Metrik kartlar */}
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-4 gap-3">
         <MetricCard label="Toplam Ticket" value={tickets.length} sub="filtreyle eşleşen" />
         <MetricCard label="Ort. Yaşam Süresi" value={`${avgH}s ${avgM}dk`} sub="ortalama süre" color="text-indigo-600" />
-        <MetricCard label="Ort. Grup Transferi" value={avgTransfers} sub="ticket başına" color="text-amber-600" />
-        <MetricCard label="Yeniden Açılan" value={tickets.filter(t=>t.reopened).length} sub={`toplam %${tickets.length ? Math.round(tickets.filter(t=>t.reopened).length/tickets.length*100) : 0}'i`} />
         <MetricCard label="Eskalasyon" value={tickets.filter(t=>t.escalated).length} sub={`toplam %${tickets.length ? Math.round(tickets.filter(t=>t.escalated).length/tickets.length*100) : 0}'i`} color="text-red-500" />
-        <MetricCard label="Çözümlendi" value={tickets.filter(t=>t.status==="solved").length} sub="mevcut durum" color="text-emerald-600" />
-        <MetricCard label="Kapatıldı" value={tickets.filter(t=>t.status==="closed").length} sub="mevcut durum" color="text-slate-500" />
+        <MetricCard label="Kapalı" value={tickets.filter(t=>t.status==="solved"||t.status==="closed").length} sub="solved + closed" color="text-emerald-600" />
       </div>
 
       {/* Tablo başlığı */}
@@ -472,7 +467,7 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
           <table className="w-full text-xs whitespace-nowrap">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
-                {["Ticket ID","Konu","Kategori","Durum","Güncellenme Tarihi","Toplam Süre","Grup Transferi","Agent Değişimi","Eskalasyon"].map(h => (
+                {["Ticket ID","Konu","Kategori","Durum","Birim","Oluşturulma Tarihi","Toplam Süre","Eskalasyon"].map(h => (
                   <th key={h} className="text-left px-4 py-3 font-semibold">{h}</th>
                 ))}
               </tr>
@@ -490,17 +485,16 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
                     <span className="bg-slate-100 text-slate-600 text-[10px] font-semibold px-2 py-0.5 rounded-full">{t.category}</span>
                   </td>
                   <td className="px-4 py-3"><StatusBadge status={t.status} /></td>
-                  <td className="px-4 py-3 text-slate-500">{t.updatedAt}</td>
+                  <td className="px-4 py-3 text-slate-600 font-medium">{t.group}</td>
+                  <td className="px-4 py-3 text-slate-500">{t.createdAt}</td>
                   <td className="px-4 py-3 text-slate-600">{t.totalDuration}</td>
-                  <td className="px-4 py-3 text-center text-slate-600">{t.groupTransfers}</td>
-                  <td className="px-4 py-3 text-center text-slate-600">{t.agentChanges}</td>
                   <td className="px-4 py-3 text-center">
                     <span className={`text-[11px] font-medium ${t.escalated ? "text-red-500":"text-slate-400"}`}>{t.escalated?"Evet":"Hayır"}</span>
                   </td>
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9} className="px-4 py-10 text-center text-slate-400">Sonuç bulunamadı</td></tr>
+                <tr><td colSpan={8} className="px-4 py-10 text-center text-slate-400">Sonuç bulunamadı</td></tr>
               )}
             </tbody>
           </table>
@@ -608,7 +602,7 @@ function SlaRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () => v
 
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
-          <p className="text-sm font-bold text-slate-700">SLA Raporu — Grup Bazlı Özet</p>
+          <p className="text-sm font-bold text-slate-700">SLA Raporu — Birim Bazlı Özet</p>
           <button onClick={onExport} className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
               <Download className="w-3.5 h-3.5" />
           </button>
@@ -616,7 +610,7 @@ function SlaRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () => v
         <table className="w-full text-xs">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
-              {["Grup","Toplam Atanan Ticket","Zamanında Kapatılan","Geciktirilen","Ort. Bekleme Süresi","Ort. Çözüm Süresi","SLA %"].map(h=>(
+              {["Birim","Toplam Atanan Ticket","Zamanında Kapatılan","Geciktirilen","Ort. Bekleme Süresi","Ort. Çözüm Süresi","SLA %"].map(h=>(
                 <th key={h} className="text-left px-5 py-3 font-semibold">{h}</th>
               ))}
             </tr>
@@ -805,9 +799,9 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
             />
           )}
 
-          {/* Grup — tüm tablarda */}
+          {/* Birim — tüm tablarda */}
           <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Grup</label>
+            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Birim</label>
             <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[200px] flex-wrap">
               {selectedGroups.map(g => (
                 <span key={g} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap">
