@@ -461,9 +461,9 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
             </div>
             <button
               onClick={onExport}
-              className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors"
+              className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar"
             >
-              <Download className="w-3.5 h-3.5" /> Ham Raporu Dışa Aktar
+              <Download className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
@@ -528,8 +528,8 @@ function AgentRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () =>
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
           <p className="text-sm font-bold text-slate-700">Agent Raporu</p>
-          <button onClick={onExport} className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-            <Download className="w-3.5 h-3.5" /> Agent Raporunu Dışa Aktar
+          <button onClick={onExport} className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
+              <Download className="w-3.5 h-3.5" />
           </button>
         </div>
         <div className="overflow-x-auto">
@@ -609,8 +609,8 @@ function SlaRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () => v
       <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
         <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
           <p className="text-sm font-bold text-slate-700">SLA Raporu — Grup Bazlı Özet</p>
-          <button onClick={onExport} className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 hover:text-indigo-700 border border-indigo-200 hover:bg-indigo-50 px-3 py-1.5 rounded-lg transition-colors">
-            <Download className="w-3.5 h-3.5" /> SLA Raporunu Dışa Aktar
+          <button onClick={onExport} className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
+              <Download className="w-3.5 h-3.5" />
           </button>
         </div>
         <table className="w-full text-xs">

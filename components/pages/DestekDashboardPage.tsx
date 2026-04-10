@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TicketIcon, ChevronUp, ChevronDown, ChevronsUpDown, CalendarDays, X } from "lucide-react";
+import { TicketIcon, ChevronUp, ChevronDown, ChevronsUpDown, CalendarDays, X, Download } from "lucide-react";
 
 /* ─── Veri tipleri ──────────────────────────────────────────── */
 interface Row {
@@ -310,10 +310,10 @@ export default function DestekDashboardPage() {
   };
 
   return (
-    <div className="flex flex-col gap-5 p-6 h-full w-full overflow-y-auto bg-[#f5f8fa]">
+    <div className="flex flex-col gap-5 p-6 h-full w-full min-h-0 bg-[#f5f8fa]">
 
       {/* ── Periyod seçici ─────────────────────────────────────── */}
-      <div className="flex items-center gap-2 flex-wrap">
+      <div className="flex items-center gap-2 flex-wrap shrink-0">
         <CalendarDays className="w-4 h-4 text-slate-400 shrink-0" />
         <div className="flex gap-1">
           {(["bugun", "haftalik", "aylik", "ozel"] as Period[]).map(p => (
@@ -336,7 +336,7 @@ export default function DestekDashboardPage() {
       </div>
 
       {/* ── Özet kartlar ───────────────────────────────────────── */}
-      <div className="grid grid-cols-6 gap-3">
+      <div className="grid grid-cols-6 gap-3 shrink-0">
         <div className="bg-white border border-slate-200 rounded-xl px-4 py-4">
           <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Toplam Açık</p>
           <p className="text-2xl font-bold text-red-500">{totalOpen}</p>
@@ -369,25 +369,39 @@ export default function DestekDashboardPage() {
         </div>
       </div>
 
-      {/* ── Birim filtresi ─────────────────────────────────────── */}
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-slate-400">{sorted.length} birim gösteriliyor</span>
-        <BirimDropdown
-          selected={selectedBirim}
-          onToggle={name => { toggleBirim(name); setPage(1); }}
-          onClear={() => { setSelectedBirim([]); setPage(1); }}
-        />
-      </div>
-
       {/* ── Tablo ──────────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
-        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center gap-2">
-          <TicketIcon className="w-4 h-4 text-slate-400" />
-          <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
-          <span className="text-xs text-slate-400 ml-1">— en çok açık ticketten en aza sıralı</span>
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex flex-col flex-1 min-h-0">
+        <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between shrink-0">
+          <div className="flex items-center gap-2">
+            <TicketIcon className="w-4 h-4 text-slate-400" />
+            <span className="text-sm font-bold text-slate-700">Birim Bazlı Ticket Özeti</span>
+            <span className="text-xs text-slate-400 ml-1">— {sorted.length} birim</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <BirimDropdown
+              selected={selectedBirim}
+              onToggle={name => { toggleBirim(name); setPage(1); }}
+              onClear={() => { setSelectedBirim([]); setPage(1); }}
+            />
+          <button
+            onClick={() => {
+              const headers = ["Birim", "Açık", "Kapalı", "Toplam", "Üstlenilmiş", "Üstlenilmemiş", "Ort. Açık Kalma (saat)", "SLA %"];
+              const rows = sorted.map(r => [r.name, r.open, r.closed, r.created, r.assigned, r.unassigned, r.avgOpenHours, r.slaCompliance]);
+              const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+              const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a"); a.href = url; a.download = `dashboard-${new Date().toISOString().slice(0,10)}.csv`; a.click();
+              URL.revokeObjectURL(url);
+            }}
+            className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors"
+            title="CSV Dışa Aktar"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
+          </div>
         </div>
 
-        <div className="overflow-auto">
+        <div className="overflow-auto flex-1 min-h-0">
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
@@ -446,8 +460,7 @@ export default function DestekDashboardPage() {
         </div>
 
         {/* Pagination */}
-        {totalPages > 1 && (
-          <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100">
+        <div className="flex items-center justify-between px-5 py-3 border-t border-slate-100 shrink-0">
             <span className="text-xs text-slate-400">
               {(safePage - 1) * PAGE_SIZE + 1}–{Math.min(safePage * PAGE_SIZE, sorted.length)} / {sorted.length} birim
             </span>
@@ -479,7 +492,6 @@ export default function DestekDashboardPage() {
                 className="px-2 py-1 text-xs rounded border border-slate-200 text-slate-500 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors">»</button>
             </div>
           </div>
-        )}
       </div>
     </div>
   );

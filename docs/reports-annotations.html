@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hermes Raporlar — Alan Açıklamaları</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f0f4f8; }
+
+    /* ── Nav ── */
+    .nav { background: #1e293b; padding: 0 32px; display: flex; align-items: center; gap: 0; }
+    .nav h1 { color: white; font-size: 15px; font-weight: 700; padding: 16px 0; margin-right: 32px; }
+    .nav-tab { padding: 16px 20px; font-size: 13px; font-weight: 600; color: #94a3b8; cursor: pointer; border-bottom: 3px solid transparent; transition: all .15s; }
+    .nav-tab:hover { color: #e2e8f0; }
+    .nav-tab.active { color: white; border-bottom-color: #6366f1; }
+
+    /* ── Page ── */
+    .page { display: none; padding: 32px; gap: 32px; }
+    .page.active { display: flex; align-items: flex-start; }
+    .diagram { flex: 1; min-width: 0; }
+    .legend { width: 320px; flex-shrink: 0; }
+
+    /* ── Section title ── */
+    .section-title { font-size: 17px; font-weight: 800; color: #1e293b; margin-bottom: 4px; }
+    .section-sub { font-size: 12px; color: #64748b; margin-bottom: 20px; }
+
+    /* ── Mock UI shell ── */
+    .mock { background: #f5f8fa; border: 2px solid #e2e8f0; border-radius: 16px; overflow: hidden; }
+
+    /* Filter bar */
+    .filter-bar { background: white; border-bottom: 1px solid #e2e8f0; padding: 14px 20px; position: relative; }
+    .filter-bar-title { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 10px; text-transform: uppercase; letter-spacing: .05em; }
+    .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+    .filter-item { display: flex; flex-direction: column; gap: 4px; }
+    .filter-label { font-size: 9px; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: .06em; }
+    .filter-input { padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 8px; background: #f8fafc; font-size: 11px; color: #475569; min-width: 120px; }
+    .filter-btn-row { display: flex; gap: 6px; margin-top: 2px; }
+    .btn-apply { padding: 5px 14px; background: #6366f1; color: white; border-radius: 8px; font-size: 11px; font-weight: 600; }
+    .btn-reset { padding: 5px 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 11px; color: #64748b; }
+
+    /* Metric cards */
+    .cards-row { display: flex; gap: 10px; padding: 16px 16px 0; }
+    .card { background: white; border: 1px solid #e2e8f0; border-radius: 12px; padding: 12px 14px; flex: 1; position: relative; }
+    .card-label { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; margin-bottom: 4px; }
+    .card-value { font-size: 20px; font-weight: 800; line-height: 1; margin-bottom: 3px; }
+    .card-sub { font-size: 9px; color: #94a3b8; }
+    .c-slate { color: #334155; } .c-indigo { color: #6366f1; } .c-amber { color: #d97706; }
+    .c-red { color: #ef4444; } .c-green { color: #10b981; } .c-gray { color: #64748b; }
+
+    /* Table wrapper */
+    .table-wrap { margin: 14px 16px 16px; background: white; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; }
+    .table-head-bar { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; border-bottom: 1px solid #f1f5f9; }
+    .table-head-title { font-size: 12px; font-weight: 700; color: #1e293b; }
+    .export-btn { font-size: 10px; color: #6366f1; border: 1px solid #e0e7ff; border-radius: 8px; padding: 4px 10px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; font-size: 10px; }
+    thead tr { background: #f8fafc; }
+    th { text-align: left; padding: 8px 12px; font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #94a3b8; white-space: nowrap; }
+    td { padding: 7px 12px; border-top: 1px solid #f1f5f9; color: #475569; white-space: nowrap; }
+    tr:nth-child(even) td { background: #fafafa; }
+    .badge { display: inline-block; padding: 1px 7px; border-radius: 99px; font-size: 9px; font-weight: 600; }
+    .b-blue { background: #dbeafe; color: #1d4ed8; }
+    .b-yellow { background: #fef9c3; color: #a16207; }
+    .b-green { background: #d1fae5; color: #065f46; }
+    .b-gray { background: #f1f5f9; color: #475569; }
+    .b-red { background: #fee2e2; color: #b91c1c; }
+
+    /* Split panel hint */
+    .split-hint { display: flex; height: 120px; }
+    .split-main { flex: 1; background: #f8fafc; border-right: 2px solid #e2e8f0; display: flex; align-items: center; justify-content: center; }
+    .split-main span { font-size: 11px; color: #94a3b8; }
+    .split-panel { width: 180px; background: white; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 4px; position: relative; }
+    .split-panel span { font-size: 10px; color: #6366f1; font-weight: 600; }
+    .split-panel small { font-size: 9px; color: #94a3b8; }
+
+    /* ── Pins ── */
+    .pin {
+      position: absolute; width: 20px; height: 20px;
+      background: #6366f1; color: white; border-radius: 50%;
+      font-size: 9px; font-weight: 800;
+      display: inline-flex; align-items: center; justify-content: center;
+      box-shadow: 0 2px 6px rgba(99,102,241,.45);
+      z-index: 10; flex-shrink: 0;
+    }
+    .pin.r { background: #ef4444; box-shadow: 0 2px 6px rgba(239,68,68,.4); }
+    .pin.g { background: #10b981; box-shadow: 0 2px 6px rgba(16,185,129,.4); }
+    .pin.a { background: #d97706; box-shadow: 0 2px 6px rgba(217,119,6,.4); }
+    .pin-abs { position: absolute; }
+
+    /* ── Legend ── */
+    .legend-title { font-size: 13px; font-weight: 700; color: #1e293b; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 1px solid #e2e8f0; }
+    .legend-section { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: #94a3b8; margin: 18px 0 10px; padding-bottom: 6px; border-bottom: 1px solid #f1f5f9; }
+    .legend-item { display: flex; gap: 10px; margin-bottom: 14px; align-items: flex-start; }
+    .lnum { width: 20px; height: 20px; min-width: 20px; border-radius: 50%; font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center; color: white; background: #6366f1; }
+    .lnum.r { background: #ef4444; } .lnum.g { background: #10b981; } .lnum.a { background: #d97706; }
+    .ltext strong { font-size: 12px; color: #1e293b; display: block; margin-bottom: 2px; }
+    .ltext p { font-size: 11px; color: #64748b; line-height: 1.55; }
+    .ltext code { font-family: "SF Mono", monospace; font-size: 10px; background: #f1f5f9; padding: 1px 4px; border-radius: 4px; color: #475569; }
+
+    .api-box { margin-top: 20px; padding: 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; }
+    .api-box-title { font-size: 11px; font-weight: 700; color: #475569; margin-bottom: 8px; }
+    .api-box code { font-family: "SF Mono", monospace; font-size: 10px; color: #6366f1; line-height: 1.9; display: block; }
+
+    .filter-matrix { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 8px; }
+    .filter-matrix th { background: #f8fafc; padding: 6px 10px; font-size: 10px; font-weight: 700; color: #64748b; border: 1px solid #e2e8f0; text-align: center; }
+    .filter-matrix td { padding: 6px 10px; border: 1px solid #e2e8f0; text-align: center; color: #475569; }
+    .check { color: #10b981; font-weight: 700; font-size: 13px; }
+    .dash-cell { color: #cbd5e1; }
+  </style>
+</head>
+<body>
+
+<div class="nav">
+  <h1>⚡ Hermes — Rapor Açıklamaları</h1>
+  <div class="nav-tab active" onclick="showTab('ham')">Ham Rapor</div>
+  <div class="nav-tab" onclick="showTab('agent')">Agent Raporu</div>
+  <div class="nav-tab" onclick="showTab('sla')">SLA Raporu</div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ HAM RAPOR -->
+<div class="page active" id="tab-ham">
+  <div class="diagram">
+    <div class="section-title">Ham Rapor</div>
+    <div class="section-sub">Tüm ticketların yaşam döngüsü — her ticket bir satır. Üzerine tıklanınca sağda detay paneli açılır.</div>
+
+    <div class="mock">
+
+      <!-- Filter bar -->
+      <div class="filter-bar" style="position:relative;">
+        <div class="pin pin-abs" style="top:8px; right:8px;">1</div>
+        <div class="filter-bar-title">Filtreler</div>
+        <div class="filter-row">
+          <div class="filter-item">
+            <div class="filter-label">Ticket ID</div>
+            <input class="filter-input" placeholder="örn. 12345" style="width:100px;" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Başlangıç Tarihi</div>
+            <input class="filter-input" value="2026-04-01" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Bitiş Tarihi</div>
+            <input class="filter-input" value="2026-04-08" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Durum</div>
+            <input class="filter-input" placeholder="Açık, Beklemede..." style="width:140px;" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Grup</div>
+            <input class="filter-input" placeholder="Tümü" style="width:140px;" readonly />
+          </div>
+          <div class="filter-item" style="justify-content:flex-end;">
+            <div class="filter-btn-row">
+              <div class="btn-apply">Uygula</div>
+              <div class="btn-reset">Sıfırla</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric cards -->
+      <div class="cards-row" style="position:relative;">
+        <div class="pin pin-abs" style="top:-10px; left:8px;">2</div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs" style="top:-8px; right:-8px;">3</div>
+          <div class="card-label">Toplam Ticket</div>
+          <div class="card-value c-slate">10</div>
+          <div class="card-sub">filtreyle eşleşen</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs a" style="top:-8px; right:-8px;">4</div>
+          <div class="card-label">Ort. Yaşam Süresi</div>
+          <div class="card-value c-indigo">47s 30dk</div>
+          <div class="card-sub">iş saati bazlı</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs a" style="top:-8px; right:-8px;">5</div>
+          <div class="card-label">Ort. Grup Transferi</div>
+          <div class="card-value c-amber">0.4</div>
+          <div class="card-sub">ticket başına</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs" style="top:-8px; right:-8px;">6</div>
+          <div class="card-label">Yeniden Açılan</div>
+          <div class="card-value c-slate">1</div>
+          <div class="card-sub">toplam %10'u</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs r" style="top:-8px; right:-8px;">7</div>
+          <div class="card-label">Eskalasyon</div>
+          <div class="card-value c-red">4</div>
+          <div class="card-sub">toplam %40'ı</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs g" style="top:-8px; right:-8px;">8</div>
+          <div class="card-label">Çözümlendi</div>
+          <div class="card-value c-green">3</div>
+          <div class="card-sub">mevcut durum</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs" style="top:-8px; right:-8px;">9</div>
+          <div class="card-label">Kapatıldı</div>
+          <div class="card-value c-gray">5</div>
+          <div class="card-sub">mevcut durum</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap" style="position:relative;">
+        <div class="pin pin-abs" style="top:10px; right:160px;">10</div>
+        <div class="pin pin-abs r" style="top:10px; right:10px;">11</div>
+        <div class="table-head-bar">
+          <div class="table-head-title">Ticket Yaşam Döngüsü <span style="font-weight:400; color:#94a3b8; font-size:10px;">10 / 10 ticket</span></div>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input placeholder="Ticket ara..." style="padding:4px 10px; font-size:10px; border:1px solid #e2e8f0; border-radius:8px; background:#f8fafc;" readonly />
+            <div class="export-btn">⬇ Ham Raporu Dışa Aktar</div>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket ID</th>
+              <th>Konu</th>
+              <th>Kategori</th>
+              <th>Durum</th>
+              <th>Güncellenme Tarihi</th>
+              <th>Toplam Süre</th>
+              <th>Grup Transferi</th>
+              <th>Agent Değişimi</th>
+              <th>Eskalasyon</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#eff6ff;">
+              <td style="font-family:monospace; color:#6366f1;">#2570671</td>
+              <td style="font-weight:600; color:#1e293b;">Tunalı Çalışma Saatleri</td>
+              <td><span class="badge b-gray">Operasyon</span></td>
+              <td><span class="badge b-gray">Kapatıldı</span></td>
+              <td>08.04.2026 11:30</td>
+              <td>161s 44dk</td>
+              <td style="text-align:center;">0</td>
+              <td style="text-align:center;">0</td>
+              <td style="text-align:center; color:#ef4444; font-weight:600;">Evet</td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace; color:#94a3b8;">#2593138</td>
+              <td style="font-weight:600; color:#1e293b;">Uygulama sorunu</td>
+              <td><span class="badge b-gray">Teknik</span></td>
+              <td><span class="badge b-gray">Kapatıldı</span></td>
+              <td>08.04.2026 11:30</td>
+              <td>69s 32dk</td>
+              <td style="text-align:center;">0</td>
+              <td style="text-align:center;">0</td>
+              <td style="text-align:center; color:#ef4444; font-weight:600;">Evet</td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace; color:#94a3b8;">#2601445</td>
+              <td style="font-weight:600; color:#1e293b;">Ödeme terminali arızası</td>
+              <td><span class="badge b-gray">Teknik</span></td>
+              <td><span class="badge b-gray">Kapatıldı</span></td>
+              <td>07.04.2026 17:00</td>
+              <td>80s 30dk</td>
+              <td style="text-align:center; color:#d97706; font-weight:600;">1</td>
+              <td style="text-align:center; color:#d97706; font-weight:600;">1</td>
+              <td style="text-align:center; color:#ef4444; font-weight:600;">Evet</td>
+            </tr>
+            <tr>
+              <td colspan="9" style="text-align:center; color:#94a3b8; font-size:10px; padding:8px;">… 7 satır daha</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Split panel hint -->
+        <div class="split-hint" style="position:relative;">
+          <div class="pin pin-abs" style="top:8px; left:8px;">12</div>
+          <div class="split-main">
+            <span>← Tablo (scrollable)</span>
+          </div>
+          <div class="split-panel" style="position:relative;">
+            <div class="pin pin-abs" style="top:8px; right:8px;">13</div>
+            <span>Detay Paneli</span>
+            <small>Ticket'a tıkla → açılır</small>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /mock -->
+  </div><!-- /diagram -->
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">📌 Ham Rapor Alan Açıklamaları</div>
+
+    <div class="legend-section">Filtreler</div>
+    <div class="legend-item">
+      <div class="lnum">1</div>
+      <div class="ltext">
+        <strong>Filtre Paneli</strong>
+        <p>Tüm filtreler "Uygula" butonuna basılınca devreye girer — anlık değil.<br>
+        <b>Ham Rapor'a özel:</b> Ticket ID, Durum, Grup<br>
+        <b>Tüm sekmelerde ortak:</b> Tarih aralığı<br>
+        Tarih filtresi <code>tickets.created_at</code> üzerinde çalışır.</p>
+      </div>
+    </div>
+
+    <div class="legend-section">Metrik Kartlar</div>
+    <div class="legend-item">
+      <div class="lnum">2</div>
+      <div class="ltext"><strong>Kart Alanı</strong><p>Aktif filtreye göre anlık güncellenir.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">3</div>
+      <div class="ltext"><strong>Toplam Ticket</strong><p>Filtreden geçen ticket sayısı.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum a">4</div>
+      <div class="ltext">
+        <strong>Ort. Yaşam Süresi</strong>
+        <p>Filtredeki ticketların <b>iş saati bazlı</b> ortalama çözüm süresi.<br>
+        <code>AVG(business_duration_minutes)</code><br>
+        Snooze süreleri dahil <b>değil</b>.</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum a">5</div>
+      <div class="ltext">
+        <strong>Ort. Grup Transferi</strong>
+        <p>Ticket başına ortalama grup değişim sayısı.<br>
+        <code>AVG(group_transfer_count)</code><br>
+        Yüksek transfer = çözüm karmaşıklığı sinyali.</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">6</div>
+      <div class="ltext">
+        <strong>Yeniden Açılan</strong>
+        <p>Solved/closed'dan tekrar open'a dönen ticket sayısı.<br>
+        <code>reopened = true</code> olan ticketlar.</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum r">7</div>
+      <div class="ltext">
+        <strong>Eskalasyon</strong>
+        <p>Eskalasyon işareti taşıyan ticket sayısı.<br>
+        <code>escalated = true</code> — lifecycle'da üst gruba transfer veya priority artışı.</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum g">8</div>
+      <div class="ltext"><strong>Çözümlendi</strong><p><code>status = 'solved'</code> — kapatılmayı bekliyor.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">9</div>
+      <div class="ltext"><strong>Kapatıldı</strong><p><code>status = 'closed'</code> — final durum.</p></div>
+    </div>
+
+    <div class="legend-section">Tablo Kolonları</div>
+    <div class="legend-item">
+      <div class="lnum">10</div>
+      <div class="ltext"><strong>Tablo Arama</strong><p>Ticket ID veya konuya göre anlık arama — filtre panelinden bağımsız, sadece görüntülenen listeyi filtreler.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum r">11</div>
+      <div class="ltext"><strong>CSV Dışa Aktar</strong><p>Aktif filtredeki tüm ticketları CSV olarak indirir. Kolonlar: Ticket ID, Konu, Durum, Öncelik, Grup, Güncelleme Tarihi, Toplam Süre, Grup Transferi, Agent Değişimi, Eskalasyon.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">12</div>
+      <div class="ltext">
+        <strong>Tablo Kolonları</strong>
+        <p>
+        <b>Ticket ID</b> → <code>tickets.id</code><br>
+        <b>Konu</b> → <code>tickets.subject</code><br>
+        <b>Kategori</b> → <code>COALESCE(category_hq, category_ms, category_internal)</code><br>
+        <b>Durum</b> → <code>tickets.status</code><br>
+        <b>Güncellenme Tarihi</b> → <code>tickets.updated_at</code><br>
+        <b>Toplam Süre</b> → <code>business_duration_minutes</code> (iş saati, snooze hariç)<br>
+        <b>Grup Transferi</b> → <code>ticket_lifecycle</code>'daki group_changed event sayısı<br>
+        <b>Agent Değişimi</b> → assignee_changed event sayısı<br>
+        <b>Eskalasyon</b> → <code>tickets.escalated</code>
+        </p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">13</div>
+      <div class="ltext">
+        <strong>Ticket Detay Paneli</strong>
+        <p>Satıra tıklanınca sağda açılır — tablo küçülür, overlay <b>yok</b>. İki panel arası scroll bağımsız.<br>
+        İçerik: Ticket No, Açılma Tarihi, Submitter, Kulübü, Kategori, Toplam Süre + Grup & Agent lifecycle adımları + Çözüm bilgileri.</p>
+      </div>
+    </div>
+
+    <div class="api-box">
+      <div class="api-box-title">📡 API Endpoint</div>
+      <code>GET /api/reports/tickets<br>
+  ?start_date=2026-04-01<br>
+  &amp;end_date=2026-04-08<br>
+  &amp;status[]=open&amp;status[]=pending<br>
+  &amp;group_id=900001<br>
+  &amp;ticket_id=2570671</code>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ AGENT RAPORU -->
+<div class="page" id="tab-agent">
+  <div class="diagram">
+    <div class="section-title">Agent Raporu</div>
+    <div class="section-sub">Ticket bazlı liste — hangi agent hangi ticketı aldı, ne zaman çözdü.</div>
+
+    <div class="mock">
+
+      <!-- Filter bar -->
+      <div class="filter-bar" style="position:relative;">
+        <div class="pin pin-abs" style="top:8px; right:8px;">1</div>
+        <div class="filter-bar-title">Filtreler</div>
+        <div class="filter-row">
+          <div class="filter-item">
+            <div class="filter-label">Başlangıç Tarihi</div>
+            <input class="filter-input" value="2026-04-01" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Bitiş Tarihi</div>
+            <input class="filter-input" value="2026-04-08" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Agent</div>
+            <input class="filter-input" placeholder="Ayşe T., Emre K.…" style="width:150px;" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Kategori</div>
+            <input class="filter-input" placeholder="3 kategori seçildi" style="width:160px;" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Grup</div>
+            <input class="filter-input" placeholder="Tümü" style="width:140px;" readonly />
+          </div>
+          <div class="filter-item" style="justify-content:flex-end;">
+            <div class="filter-btn-row">
+              <div class="btn-apply">Uygula</div>
+              <div class="btn-reset">Sıfırla</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric cards -->
+      <div class="cards-row" style="position:relative;">
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs" style="top:-8px; right:-8px;">2</div>
+          <div class="card-label">Toplam Ticket</div>
+          <div class="card-value c-slate">10</div>
+          <div class="card-sub">filtredeki ticketlar</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs a" style="top:-8px; right:-8px;">3</div>
+          <div class="card-label">Aktif Agent</div>
+          <div class="card-value c-amber">4</div>
+          <div class="card-sub">atanan agent sayısı</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs g" style="top:-8px; right:-8px;">4</div>
+          <div class="card-label">Çözümlenen</div>
+          <div class="card-value c-green">7</div>
+          <div class="card-sub">çözüm tarihi olan</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap" style="position:relative;">
+        <div class="pin pin-abs r" style="top:10px; right:10px;">5</div>
+        <div class="table-head-bar">
+          <div class="table-head-title">Agent Raporu</div>
+          <div class="export-btn">⬇ Agent Raporunu Dışa Aktar</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Ticket No</th>
+              <th>Atanan Agent</th>
+              <th>Ticket Açılma Tarihi</th>
+              <th>Kategori</th>
+              <th>Atanan Kullanıcı Grubu</th>
+              <th>Çözüm Tarihi</th>
+              <th>Çözümleme Süresi</th>
+              <th>Çözümleyen Agent Grubu</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-family:monospace; color:#6366f1;">#2570671</td>
+              <td style="font-weight:600;">Ayşe T.</td>
+              <td>01.04.2026 09:00</td>
+              <td><span class="badge b-gray">Operasyon</span></td>
+              <td>MAC Ürün Yönetimi</td>
+              <td style="color:#10b981; font-weight:600;">08.04.2026 10:44</td>
+              <td>161s 44dk</td>
+              <td>MAC Ürün Yönetimi</td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace; color:#94a3b8;">#2601445</td>
+              <td style="font-weight:600;">Can Y.</td>
+              <td>04.04.2026 08:30</td>
+              <td><span class="badge b-gray">Teknik</span></td>
+              <td>MAC Teknik Destek</td>
+              <td style="color:#10b981; font-weight:600;">07.04.2026 17:00</td>
+              <td>80s 30dk</td>
+              <td>MAC Teknik Destek</td>
+            </tr>
+            <tr>
+              <td style="font-family:monospace; color:#94a3b8;">#2633741</td>
+              <td style="color:#94a3b8;">—</td>
+              <td>08.04.2026 08:00</td>
+              <td><span class="badge b-gray">Operasyon</span></td>
+              <td>MAC Üyelik</td>
+              <td style="color:#94a3b8;">—</td>
+              <td style="color:#94a3b8;">—</td>
+              <td style="color:#94a3b8;">—</td>
+            </tr>
+            <tr>
+              <td colspan="8" style="text-align:center; color:#94a3b8; font-size:10px; padding:8px;">… 7 satır daha</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">📌 Agent Raporu Alan Açıklamaları</div>
+
+    <div class="legend-section">Filtreler</div>
+    <div class="legend-item">
+      <div class="lnum">1</div>
+      <div class="ltext">
+        <strong>Filtre Paneli — Agent Raporu'na Özel</strong>
+        <p>
+        <b>Agent</b> → <code>tickets.assignee_id</code> — birden fazla seçilebilir<br>
+        <b>Kategori</b> → checkbox dropdown, 30+ kategori, arama destekli. <code>COALESCE(category_hq, category_ms, category_internal)</code><br>
+        <b>Grup</b> → <code>tickets.group_id</code><br>
+        <b>Tarih</b> → <code>tickets.created_at</code> aralığı<br>
+        <i>Ticket ID ve Durum filtresi bu sekmede yok.</i>
+        </p>
+      </div>
+    </div>
+
+    <div class="legend-section">Metrik Kartlar</div>
+    <div class="legend-item">
+      <div class="lnum">2</div>
+      <div class="ltext"><strong>Toplam Ticket</strong><p>Aktif filtredeki toplam ticket sayısı.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum a">3</div>
+      <div class="ltext">
+        <strong>Aktif Agent</strong>
+        <p>Filtredeki ticketlara atanmış unique agent sayısı.<br>
+        <code>COUNT(DISTINCT assignee_id) WHERE assignee_id IS NOT NULL</code></p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum g">4</div>
+      <div class="ltext">
+        <strong>Çözümlenen</strong>
+        <p>Çözüm tarihi olan ticket sayısı.<br>
+        <code>COUNT(*) WHERE solved_at IS NOT NULL</code></p>
+      </div>
+    </div>
+
+    <div class="legend-section">Tablo Kolonları</div>
+    <div class="legend-item">
+      <div class="lnum r">5</div>
+      <div class="ltext"><strong>CSV Dışa Aktar</strong><p>Kolonlar: Ticket No, Atanan Agent, Ticket Açılma Tarihi, Kategori, Atanan Kullanıcı Grubu, Çözüm Tarihi, Çözümleme Süresi, Çözümleyen Agent Grubu.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">6</div>
+      <div class="ltext">
+        <strong>Tablo Kolonları</strong>
+        <p>
+        <b>Ticket No</b> → <code>tickets.id</code><br>
+        <b>Atanan Agent</b> → <code>zendesk_agents.name</code> (assignee_id join)<br>
+        <b>Ticket Açılma Tarihi</b> → <code>tickets.created_at</code><br>
+        <b>Kategori</b> → <code>COALESCE(category_hq, category_ms, category_internal)</code><br>
+        <b>Atanan Kullanıcı Grubu</b> → ticketin şu anki grubu (<code>tickets.group_id</code>)<br>
+        <b>Çözüm Tarihi</b> → <code>tickets.solved_at</code> · atanmamışsa "—"<br>
+        <b>Çözümleme Süresi</b> → <code>business_duration_minutes</code> (iş saati, snooze hariç)<br>
+        <b>Çözümleyen Agent Grubu</b> → <code>ticket_lifecycle</code>'daki son solved event'inin grubu
+        </p>
+      </div>
+    </div>
+
+    <div class="api-box">
+      <div class="api-box-title">📡 API Endpoint</div>
+      <code>GET /api/reports/agents<br>
+  ?start_date=2026-04-01<br>
+  &amp;end_date=2026-04-08<br>
+  &amp;agent_id[]=112233<br>
+  &amp;category[]=Teknik<br>
+  &amp;group_id=900001</code>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ SLA RAPORU -->
+<div class="page" id="tab-sla">
+  <div class="diagram">
+    <div class="section-title">SLA Raporu</div>
+    <div class="section-sub">Grup bazlı özet — her grup bir satır, SLA performansı aggregated.</div>
+
+    <div class="mock">
+
+      <!-- Filter bar -->
+      <div class="filter-bar" style="position:relative;">
+        <div class="pin pin-abs" style="top:8px; right:8px;">1</div>
+        <div class="filter-bar-title">Filtreler</div>
+        <div class="filter-row">
+          <div class="filter-item">
+            <div class="filter-label">Başlangıç Tarihi</div>
+            <input class="filter-input" value="2026-04-01" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Bitiş Tarihi</div>
+            <input class="filter-input" value="2026-04-08" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Kategori</div>
+            <input class="filter-input" placeholder="Teknik, Üyelik…" style="width:160px;" readonly />
+          </div>
+          <div class="filter-item">
+            <div class="filter-label">Grup</div>
+            <input class="filter-input" placeholder="Tümü" style="width:140px;" readonly />
+          </div>
+          <div class="filter-item" style="justify-content:flex-end;">
+            <div class="filter-btn-row">
+              <div class="btn-apply">Uygula</div>
+              <div class="btn-reset">Sıfırla</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Metric cards -->
+      <div class="cards-row" style="position:relative;">
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs g" style="top:-8px; right:-8px;">2</div>
+          <div class="card-label">Genel SLA %</div>
+          <div class="card-value c-amber">%76</div>
+          <div class="card-sub">tüm gruplar</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs" style="top:-8px; right:-8px;">3</div>
+          <div class="card-label">Toplam Ticket</div>
+          <div class="card-value c-slate">10</div>
+          <div class="card-sub">filtredeki ticketlar</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs g" style="top:-8px; right:-8px;">4</div>
+          <div class="card-label">Zamanında Kapanan</div>
+          <div class="card-value c-green">4</div>
+          <div class="card-sub">≤ eşik süresi</div>
+        </div>
+        <div class="card" style="position:relative;">
+          <div class="pin pin-abs r" style="top:-8px; right:-8px;">5</div>
+          <div class="card-label">Geciktirilen</div>
+          <div class="card-value c-red">6</div>
+          <div class="card-sub">> eşik süresi</div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-wrap" style="position:relative;">
+        <div class="pin pin-abs r" style="top:10px; right:10px;">6</div>
+        <div class="table-head-bar">
+          <div class="table-head-title">SLA Raporu — Grup Bazlı Özet</div>
+          <div class="export-btn">⬇ SLA Raporunu Dışa Aktar</div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Grup</th>
+              <th>Toplam Atanan Ticket</th>
+              <th>Zamanında Kapatılan</th>
+              <th>Geciktirilen</th>
+              <th>Ort. Bekleme Süresi</th>
+              <th>Ort. Çözüm Süresi</th>
+              <th>SLA %</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="font-weight:600; color:#1e293b;">MAC Ürün Yönetimi</td>
+              <td>3</td>
+              <td><span class="badge b-green">2</span></td>
+              <td><span class="badge b-red">1</span></td>
+              <td>16 dk</td>
+              <td>103 saat 54 dk</td>
+              <td><span style="font-weight:700; color:#10b981;">%67</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600; color:#1e293b;">MAC Teknik Destek</td>
+              <td>4</td>
+              <td><span class="badge b-green">1</span></td>
+              <td><span class="badge b-red">3</span></td>
+              <td>12 dk</td>
+              <td>60 saat 8 dk</td>
+              <td><span style="font-weight:700; color:#ef4444;">%25</span></td>
+            </tr>
+            <tr>
+              <td style="font-weight:600; color:#1e293b;">MAC Üyelik</td>
+              <td>2</td>
+              <td><span class="badge b-green">1</span></td>
+              <td><span class="badge" style="background:#f1f5f9; color:#94a3b8;">0</span></td>
+              <td>8 dk</td>
+              <td>23 saat 36 dk</td>
+              <td><span style="font-weight:700; color:#d97706;">%50</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-title">📌 SLA Raporu Alan Açıklamaları</div>
+
+    <div class="legend-section">Filtreler</div>
+    <div class="legend-item">
+      <div class="lnum">1</div>
+      <div class="ltext">
+        <strong>Filtre Paneli — SLA Raporu'na Özel</strong>
+        <p>
+        <b>Kategori</b> → checkbox dropdown, SLA açısından anlamsız kategorileri dışarıda bırakmak için. <code>COALESCE(category_hq, category_ms, category_internal)</code><br>
+        <b>Grup</b> → belirli grupları izole etmek için<br>
+        <b>Tarih</b> → <code>tickets.created_at</code> aralığı<br>
+        <i>Ticket ID, Durum, Agent filtresi bu sekmede yok.</i>
+        </p>
+      </div>
+    </div>
+
+    <div class="legend-section">Metrik Kartlar</div>
+    <div class="legend-item">
+      <div class="lnum g">2</div>
+      <div class="ltext">
+        <strong>Genel SLA %</strong>
+        <p>Filtredeki tüm gruplar için birleşik SLA yüzdesi.<br>
+        <code>on_time_closed / total_opened × 100</code><br>
+        🟢 ≥%85 · 🔴 &lt;%85</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">3</div>
+      <div class="ltext"><strong>Toplam Ticket</strong><p>Filtredeki toplam ticket sayısı (açık + kapalı).</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum g">4</div>
+      <div class="ltext">
+        <strong>Zamanında Kapanan</strong>
+        <p><code>sla_status = 'on_time'</code> — iş saati eşiği içinde çözülen ticketlar.<br>
+        Eşik <code>sla_rules.threshold_minutes</code>'dan gelir.</p>
+      </div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum r">5</div>
+      <div class="ltext">
+        <strong>Geciktirilen</strong>
+        <p><code>sla_status = 'breached'</code> — iş saati eşiğini aşarak kapanan ticketlar.</p>
+      </div>
+    </div>
+
+    <div class="legend-section">Tablo Kolonları</div>
+    <div class="legend-item">
+      <div class="lnum r">6</div>
+      <div class="ltext"><strong>CSV Dışa Aktar</strong><p>Kolonlar: Grup, Toplam Atanan Ticket, Zamanında Kapatılan, Geciktirilen, Ort. Bekleme Süresi, Ort. Çözüm Süresi, SLA %.</p></div>
+    </div>
+    <div class="legend-item">
+      <div class="lnum">7</div>
+      <div class="ltext">
+        <strong>Tablo Kolonları</strong>
+        <p>
+        <b>Grup</b> → <code>COALESCE(clubs.name, zendesk_groups.name)</code><br>
+        <b>Toplam Atanan Ticket</b> → dönemde o gruba atanan tüm ticketlar (payda)<br>
+        <b>Zamanında Kapatılan</b> → <code>sla_status = 'on_time'</code> (pay)<br>
+        <b>Geciktirilen</b> → <code>sla_status = 'breached'</code><br>
+        <b>Ort. Bekleme Süresi</b> → ilk atamaya kadar geçen iş saati süresi<br>
+        <b>Ort. Çözüm Süresi</b> → <code>AVG(business_duration_minutes)</code> WHERE kapandı<br>
+        <b>SLA %</b> → <code>on_time / total × 100</code> · 🟢 ≥%85 · 🟡 %70–84 · 🔴 &lt;%70
+        </p>
+      </div>
+    </div>
+
+    <div style="margin-top:16px; padding:12px; background:#fffbeb; border:1px solid #fde68a; border-radius:10px;">
+      <div style="font-size:11px; font-weight:700; color:#92400e; margin-bottom:6px;">⚠️ SLA Hesap Notu</div>
+      <p style="font-size:11px; color:#78350f; line-height:1.6;">
+        <b>Eşik:</b> <code>sla_rules.threshold_minutes</code> — gruba ve/veya kategoriye göre farklılaşabilir.<br>
+        <b>Süre hesabı:</b> Sadece grubun çalışma saatleri sayılır, snooze süreleri dahil değil.<br>
+        <b>Payda:</b> Toplam açılan ticket (açık olanlar dahil) — sadece kapananlar değil.
+      </p>
+    </div>
+
+    <div class="api-box">
+      <div class="api-box-title">📡 API Endpoint</div>
+      <code>GET /api/reports/sla<br>
+  ?start_date=2026-04-01<br>
+  &amp;end_date=2026-04-08<br>
+  &amp;category[]=Teknik<br>
+  &amp;group_id=900001</code>
+    </div>
+
+    <div style="margin-top:20px;">
+      <div class="legend-section" style="margin-top:0;">Filtre Karşılaştırma — Hangi Sekmede Ne Var</div>
+      <table class="filter-matrix">
+        <thead>
+          <tr>
+            <th>Filtre</th>
+            <th>Ham</th>
+            <th>Agent</th>
+            <th>SLA</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Tarih Aralığı</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Ticket ID</td><td class="check">✓</td><td class="dash-cell">—</td><td class="dash-cell">—</td></tr>
+          <tr><td>Durum</td><td class="check">✓</td><td class="dash-cell">—</td><td class="check">✓</td></tr>
+          <tr><td>Agent</td><td class="dash-cell">—</td><td class="check">✓</td><td class="dash-cell">—</td></tr>
+          <tr><td>Kategori</td><td class="dash-cell">—</td><td class="check">✓</td><td class="check">✓</td></tr>
+          <tr><td>Grup</td><td class="check">✓</td><td class="check">✓</td><td class="check">✓</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+  function showTab(tab) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-' + tab).classList.add('active');
+    event.target.classList.add('active');
+  }
+</script>
+</body>
+</html>

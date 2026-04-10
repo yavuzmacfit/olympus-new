@@ -265,7 +265,7 @@ queue.process('zendesk-event', async (job) => {
     priority: detail.priority,
     group_id: detail.group_id,
     assignee_id: detail.assignee_id,
-    // Kategori: 3 field birbirini dışlıyor, hangisi doluysa o alınır
+    // Kategori: 4 field birbirini dışlıyor, hangisi doluysa o alınır
     ...extractCategories(detail.custom_fields),
     // extractCategories dönüş örneği:
     // { category_source: 'ms', category_ms: 'Üyelik İptali', category_hq: null, category_internal: null }
@@ -330,7 +330,7 @@ GET /api/reports/dashboard
   &start_date=...  (özel aralık için)
   &end_date=...
 
--- Dönen: birim, open, closed, assigned, unassigned, avg_resolution_minutes, sla_pct
+-- Dönen: club, open, closed, assigned, unassigned, avg_open_hours, sla_pct
 ```
 
 ### Ticket Lifecycle Detayı
