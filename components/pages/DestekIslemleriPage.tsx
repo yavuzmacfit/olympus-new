@@ -434,7 +434,7 @@ function HamRapor({ tickets, onExport }: { tickets: Ticket[]; onExport: () => vo
       {/* Metrik kartlar */}
       <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(130px, 1fr))" }}>
         <MetricCard label="Toplam Ticket" value={tickets.length} sub="filtreyle eşleşen" />
-        <MetricCard label="Ort. Yaşam Süresi" value={`${avgH} saat ${avgM} dakika`} sub="ortalama süre" color="text-indigo-600" />
+        <MetricCard label="Ort. Yaşam Süresi" value={`${avgH}s ${avgM}dk`} sub="ortalama süre" color="text-indigo-600" />
         <MetricCard label="Ort. Grup Transferi" value={avgTransfers} sub="ticket başına" color="text-amber-600" />
         <MetricCard label="Yeniden Açılan" value={tickets.filter(t=>t.reopened).length} sub={`toplam %${tickets.length ? Math.round(tickets.filter(t=>t.reopened).length/tickets.length*100) : 0}'i`} />
         <MetricCard label="Eskalasyon" value={tickets.filter(t=>t.escalated).length} sub={`toplam %${tickets.length ? Math.round(tickets.filter(t=>t.escalated).length/tickets.length*100) : 0}'i`} color="text-red-500" />
