@@ -370,7 +370,7 @@ export default function DestekDashboardPage() {
       </div>
 
       {/* ── Tablo ──────────────────────────────────────────────── */}
-      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden">
         <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <TicketIcon className="w-4 h-4 text-slate-400" />
