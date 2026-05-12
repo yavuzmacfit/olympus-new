@@ -762,21 +762,38 @@ function SlaRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () => v
 
 /* ─── Kategori Raporu sekmesi ────────────────────────────────── */
 function KategoriRaporu({ tickets, birimFilter, onExport }: { tickets: Ticket[]; birimFilter: string[]; onExport: () => void }) {
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
   const filtered = birimFilter.length === 0 ? tickets : tickets.filter(t =>
     birimFilter.includes(t.submitterClub) || birimFilter.includes(t.group)
   );
+
   const catMap: Record<string, Ticket[]> = {};
   filtered.forEach(t => { (catMap[t.category] = catMap[t.category] || []).push(t); });
 
   const rows = Object.entries(catMap).map(([category, ts]) => {
     const avgResMin = Math.round(ts.reduce((s,t) => s + t.totalMinutes, 0) / ts.length);
-    const groupCount: Record<string, number> = {};
-    ts.forEach(t => { groupCount[t.group] = (groupCount[t.group] || 0) + 1; });
-    const topGroup = Object.entries(groupCount).sort((a,b) => b[1]-a[1])[0][0];
-    return { category, total: ts.length, topGroup, avgResMin };
+    const groupMap: Record<string, Ticket[]> = {};
+    ts.forEach(t => { (groupMap[t.group] = groupMap[t.group] || []).push(t); });
+    const topGroup = Object.entries(groupMap).sort((a,b) => b[1].length - a[1].length)[0][0];
+    const breakdown = Object.entries(groupMap).map(([group, gts]) => ({
+      group,
+      total: gts.length,
+      avgResMin: Math.round(gts.reduce((s,t) => s + t.totalMinutes, 0) / gts.length),
+    })).sort((a,b) => b.total - a.total);
+    return { category, total: ts.length, topGroup, avgResMin, breakdown };
   }).sort((a,b) => b.total - a.total);
 
   const topCat = rows[0];
+
+  const toggle = (cat: string) => setExpanded(prev => {
+    const next = new Set(prev);
+    next.has(cat) ? next.delete(cat) : next.add(cat);
+    return next;
+  });
+
+  const fmtMin = (m: number) => m >= 60 ? `${Math.floor(m/60)} saat ${m%60} dk` : `${m} dk`;
+  const timeColor = (m: number) => m > 2400 ? "text-red-500" : m > 1440 ? "text-amber-600" : "text-emerald-600";
 
   return (
     <div className="flex flex-col gap-4 h-full overflow-y-auto p-6">
@@ -802,23 +819,65 @@ function KategoriRaporu({ tickets, birimFilter, onExport }: { tickets: Ticket[];
             </tr>
           </thead>
           <tbody>
-            {rows.map((row, i) => {
-              const avgFmt = row.avgResMin >= 60
-                ? `${Math.floor(row.avgResMin/60)} saat ${row.avgResMin%60} dk`
-                : `${row.avgResMin} dk`;
+            {rows.map((row) => {
+              /* ── Birim filtresi aktifken: düz satır ── */
+              if (birimFilter.length > 0) {
+                return row.breakdown.map(b => (
+                  <tr key={`${row.category}-${b.group}`} className="border-b border-slate-50 hover:bg-slate-50/70">
+                    <td className="px-5 py-3">
+                      <span className="bg-slate-100 text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded-full">{row.category}</span>
+                    </td>
+                    <td className="px-5 py-3 font-bold text-slate-700">{b.total}</td>
+                    <td className="px-5 py-3 font-medium text-slate-600">{b.group}</td>
+                    <td className="px-5 py-3">
+                      <span className={`font-semibold ${timeColor(b.avgResMin)}`}>{fmtMin(b.avgResMin)}</span>
+                    </td>
+                  </tr>
+                ));
+              }
+
+              /* ── Filtre yokken: accordion ── */
+              const isExpanded = expanded.has(row.category);
               return (
-                <tr key={row.category} className={`border-b border-slate-50 hover:bg-slate-50/70 ${i%2===1?"bg-slate-50/30":""}`}>
-                  <td className="px-5 py-3">
-                    <span className="bg-slate-100 text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded-full">{row.category}</span>
-                  </td>
-                  <td className="px-5 py-3 font-bold text-slate-700">{row.total}</td>
-                  <td className="px-5 py-3 text-slate-600">{row.topGroup}</td>
-                  <td className="px-5 py-3">
-                    <span className={`font-semibold ${row.avgResMin > 2400 ? "text-red-500" : row.avgResMin > 1440 ? "text-amber-600" : "text-emerald-600"}`}>
-                      {avgFmt}
-                    </span>
-                  </td>
-                </tr>
+                <>
+                  <tr
+                    key={row.category}
+                    onClick={() => toggle(row.category)}
+                    className={`border-b border-slate-100 cursor-pointer transition-colors hover:bg-indigo-50/40 ${isExpanded ? "bg-indigo-50/30" : ""}`}
+                  >
+                    <td className="px-5 py-3">
+                      <div className="flex items-center gap-2">
+                        <svg className={`w-3.5 h-3.5 text-slate-400 shrink-0 transition-transform duration-200 ${isExpanded ? "rotate-90" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd"/>
+                        </svg>
+                        <span className="bg-slate-100 text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded-full">{row.category}</span>
+                      </div>
+                    </td>
+                    <td className="px-5 py-3 font-bold text-slate-700">{row.total}</td>
+                    <td className="px-5 py-3 text-slate-500 text-[11px]">
+                      {isExpanded
+                        ? <span className="text-slate-400 italic">kırılım aşağıda</span>
+                        : <span>{row.breakdown.length} birim</span>}
+                    </td>
+                    <td className="px-5 py-3">
+                      <span className={`font-semibold ${timeColor(row.avgResMin)}`}>{fmtMin(row.avgResMin)}</span>
+                    </td>
+                  </tr>
+                  {isExpanded && row.breakdown.map((b, bi) => (
+                    <tr key={`${row.category}-${b.group}`} className={`border-b border-slate-50 bg-indigo-50/20 ${bi === row.breakdown.length - 1 ? "border-b-2 border-indigo-100" : ""}`}>
+                      <td className="py-2.5 pr-5 pl-12">
+                        <div className="flex items-center gap-2">
+                          <div className="w-1 h-1 rounded-full bg-indigo-300 shrink-0" />
+                        </div>
+                      </td>
+                      <td className="px-5 py-2.5 text-slate-500">{b.total}</td>
+                      <td className="px-5 py-2.5 font-medium text-slate-600">{b.group}</td>
+                      <td className="px-5 py-2.5">
+                        <span className={`font-semibold ${timeColor(b.avgResMin)}`}>{fmtMin(b.avgResMin)}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </>
               );
             })}
             {rows.length === 0 && (
