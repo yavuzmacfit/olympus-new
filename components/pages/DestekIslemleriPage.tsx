@@ -155,6 +155,11 @@ const ALL_TICKETS: Ticket[] = [
 ];
 
 const GROUPS: Group[] = ["MAC Ürün Yönetimi", "MAC Teknik Destek", "MAC Üyelik", "MAC Finans", "MAC Tesis"];
+const KULUP_NAMES = ["Akbatı", "Mall of Istanbul", "Axis Kağıthane", "Ankamall", "Armada",
+  "Maltepe Pasco Plaza", "Buyaka", "Fulya", "Kanyon", "Forum Kidsmall",
+  "Kocaeli Gebze Center", "Metrogarden", "Anadolu Hisarı", "Antalya Lara Carrefour",
+  "Cadde", "Panora", "Bursa Podyumpark", "Kartal", "Vialand", "Adana Optimum",
+  "Podium", "Ortaköy Lotus", "Ömür Plaza", "Ormanada", "A Plus"];
 const STATUS_LABELS: Record<Status, string> = { open: "Açık", pending: "Beklemede", solved: "Çözüldü", closed: "Kapatıldı" };
 
 // Helper: "DD.MM.YYYY HH:MM" → Date (for date comparisons)
@@ -170,7 +175,7 @@ const STATUS_COLORS: Record<Status, string> = {
   closed:  "bg-slate-200 text-slate-600",
 };
 
-type TabKey = "ham" | "agent" | "sla";
+type TabKey = "ham" | "agent" | "sla" | "kategori";
 
 /* ─── Checkbox Dropdown ──────────────────────────────────────── */
 function CheckboxDropdown({
@@ -238,6 +243,101 @@ function CheckboxDropdown({
               <button onClick={() => { onClear(); setSearch(""); }} className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium">
                 Temizle
               </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Gruplu Birim Dropdown (Kulüpler + Merkezi Gruplar) ────── */
+function BirimDropdown({
+  selected, onToggle, onClear,
+}: {
+  selected: string[];
+  onToggle: (name: string) => void;
+  onClear: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+
+  const filteredKulups  = KULUP_NAMES.filter(n => n.toLowerCase().includes(search.toLowerCase()));
+  const filteredCentral = GROUPS.filter(n => n.toLowerCase().includes(search.toLowerCase()));
+
+  const label = selected.length === 0 ? "Tüm Birimler"
+    : selected.length === 1 ? selected[0]
+    : `${selected.length} birim seçili`;
+
+  return (
+    <div className="flex flex-col gap-1">
+      <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Birim</label>
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen(p => !p)}
+          className="flex items-center justify-between gap-2 px-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 hover:bg-white min-w-[200px] focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          <span className={selected.length ? "text-slate-700 font-medium" : "text-slate-400"}>{label}</span>
+          <div className="flex items-center gap-1 shrink-0">
+            {selected.length > 0 && (
+              <span onClick={e => { e.stopPropagation(); onClear(); }} className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                <X className="w-3 h-3" />
+              </span>
+            )}
+            <svg className={`w-3.5 h-3.5 text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd"/>
+            </svg>
+          </div>
+        </button>
+
+        {open && (
+          <div className="absolute left-0 top-full mt-1 z-30 bg-white border border-slate-200 rounded-xl shadow-xl w-64">
+            <div className="p-2 border-b border-slate-100">
+              <input autoFocus value={search} onChange={e => setSearch(e.target.value)}
+                placeholder="Birim ara..."
+                className="w-full px-2.5 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-indigo-200" />
+            </div>
+            <div className="max-h-72 overflow-y-auto">
+              {filteredKulups.length > 0 && (
+                <>
+                  <div className="flex items-center justify-between px-3 pt-2.5 pb-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">📍 Kulüpler</span>
+                    <button onClick={() => filteredKulups.forEach(n => { if (!selected.includes(n)) onToggle(n); })}
+                      className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium">Tümünü seç</button>
+                  </div>
+                  {filteredKulups.map(name => (
+                    <label key={name} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <input type="checkbox" checked={selected.includes(name)} onChange={() => onToggle(name)}
+                        className="accent-indigo-600 w-3.5 h-3.5 shrink-0" />
+                      <span className="text-xs text-slate-700">{name}</span>
+                    </label>
+                  ))}
+                </>
+              )}
+              {filteredCentral.length > 0 && (
+                <>
+                  <div className="flex items-center justify-between px-3 pt-3 pb-1 border-t border-slate-100 mt-1">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">🏢 Merkezi Gruplar</span>
+                    <button onClick={() => filteredCentral.forEach(n => { if (!selected.includes(n)) onToggle(n); })}
+                      className="text-[10px] text-indigo-500 hover:text-indigo-700 font-medium">Tümünü seç</button>
+                  </div>
+                  {filteredCentral.map(name => (
+                    <label key={name} className="flex items-center gap-2.5 px-3 py-1.5 hover:bg-slate-50 cursor-pointer">
+                      <input type="checkbox" checked={selected.includes(name)} onChange={() => onToggle(name)}
+                        className="accent-indigo-600 w-3.5 h-3.5 shrink-0" />
+                      <span className="text-xs text-slate-700">{name}</span>
+                    </label>
+                  ))}
+                </>
+              )}
+              {filteredKulups.length === 0 && filteredCentral.length === 0 && (
+                <p className="px-3 py-4 text-xs text-slate-400 text-center">Sonuç bulunamadı</p>
+              )}
+            </div>
+            <div className="flex items-center justify-between px-3 py-2 border-t border-slate-100">
+              <span className="text-[10px] text-slate-400">{selected.length} birim seçili</span>
+              <button onClick={() => { onClear(); setSearch(""); }} className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium">Temizle</button>
             </div>
           </div>
         )}
@@ -367,7 +467,7 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
       t.id, t.agent, t.createdAt, t.category, t.group,
       t.resolvedAt ?? "-", t.totalDuration, t.resolvingGroup ?? "-",
     ]);
-  } else {
+  } else if (tab === "sla") {
     headers = ["Birim","Toplam Atanan Ticket","Zamanında Kapatılan","Geciktirilen","Ort. Bekleme Süresi","Ort. Çözüm Süresi (dk)","SLA %"];
     const SLA_THRESHOLD = 3600;
     const groupMap: Record<string, Ticket[]> = {};
@@ -379,6 +479,18 @@ function exportCSV(tickets: Ticket[], tab: TabKey) {
       const avgWait    = Math.round(avgRes * 0.08);
       const sla        = Math.round(zamaninda / ts.length * 100);
       return [grp, String(ts.length), String(zamaninda), String(geciktirilen), `${avgWait} dk`, String(avgRes), `%${sla}`];
+    });
+  } else {
+    headers = ["Kategori","Ticket Sayısı","Birimler","Ortalama Çözüm Süresi"];
+    const catMap: Record<string, Ticket[]> = {};
+    tickets.forEach(t => { (catMap[t.category] = catMap[t.category] || []).push(t); });
+    rows = Object.entries(catMap).map(([cat, ts]) => {
+      const avgRes = Math.round(ts.reduce((s,t) => s + t.totalMinutes, 0) / ts.length);
+      const groupCount: Record<string, number> = {};
+      ts.forEach(t => { groupCount[t.group] = (groupCount[t.group] || 0) + 1; });
+      const topGroup = Object.entries(groupCount).sort((a,b) => b[1]-a[1])[0][0];
+      const fmt = avgRes >= 60 ? `${Math.floor(avgRes/60)} saat ${avgRes%60} dk` : `${avgRes} dk`;
+      return [cat, String(ts.length), topGroup, fmt];
     });
   }
 
@@ -648,9 +760,80 @@ function SlaRaporu({ tickets, onExport }: { tickets: Ticket[]; onExport: () => v
   );
 }
 
+/* ─── Kategori Raporu sekmesi ────────────────────────────────── */
+function KategoriRaporu({ tickets, birimFilter, onExport }: { tickets: Ticket[]; birimFilter: string[]; onExport: () => void }) {
+  const filtered = birimFilter.length === 0 ? tickets : tickets.filter(t =>
+    birimFilter.includes(t.submitterClub) || birimFilter.includes(t.group)
+  );
+  const catMap: Record<string, Ticket[]> = {};
+  filtered.forEach(t => { (catMap[t.category] = catMap[t.category] || []).push(t); });
+
+  const rows = Object.entries(catMap).map(([category, ts]) => {
+    const avgResMin = Math.round(ts.reduce((s,t) => s + t.totalMinutes, 0) / ts.length);
+    const groupCount: Record<string, number> = {};
+    ts.forEach(t => { groupCount[t.group] = (groupCount[t.group] || 0) + 1; });
+    const topGroup = Object.entries(groupCount).sort((a,b) => b[1]-a[1])[0][0];
+    return { category, total: ts.length, topGroup, avgResMin };
+  }).sort((a,b) => b.total - a.total);
+
+  const topCat = rows[0];
+
+  return (
+    <div className="flex flex-col gap-4 h-full overflow-y-auto p-6">
+      <div className="grid grid-cols-3 gap-3">
+        <MetricCard label="Toplam Kategori" value={rows.length} sub="aktif kategoriler" color="text-indigo-600" />
+        <MetricCard label="Toplam Ticket" value={filtered.length} sub="filtredeki ticketlar" color="text-slate-700" />
+        <MetricCard label="En Yoğun Kategori" value={topCat?.category ?? "-"} sub={topCat ? `${topCat.total} ticket` : ""} color="text-amber-600" />
+      </div>
+
+      <div className="bg-white border border-slate-200 rounded-xl overflow-hidden flex-1">
+        <div className="flex items-center justify-between px-5 py-3 border-b border-slate-100">
+          <p className="text-sm font-bold text-slate-700">Kategori Raporu — Kategori Bazlı Özet</p>
+          <button onClick={onExport} className="flex items-center text-slate-500 hover:text-slate-700 border border-slate-200 hover:border-slate-400 p-1.5 rounded-lg transition-colors" title="CSV Dışa Aktar">
+            <Download className="w-3.5 h-3.5" />
+          </button>
+        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-slate-50 border-b border-slate-100 text-slate-500 text-[10px] uppercase tracking-wider">
+              {["Kategori","Ticket Sayısı","Birimler","Ortalama Çözüm Süresi"].map(h => (
+                <th key={h} className="text-left px-5 py-3 font-semibold">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, i) => {
+              const avgFmt = row.avgResMin >= 60
+                ? `${Math.floor(row.avgResMin/60)} saat ${row.avgResMin%60} dk`
+                : `${row.avgResMin} dk`;
+              return (
+                <tr key={row.category} className={`border-b border-slate-50 hover:bg-slate-50/70 ${i%2===1?"bg-slate-50/30":""}`}>
+                  <td className="px-5 py-3">
+                    <span className="bg-slate-100 text-slate-700 text-[11px] font-semibold px-2.5 py-1 rounded-full">{row.category}</span>
+                  </td>
+                  <td className="px-5 py-3 font-bold text-slate-700">{row.total}</td>
+                  <td className="px-5 py-3 text-slate-600">{row.topGroup}</td>
+                  <td className="px-5 py-3">
+                    <span className={`font-semibold ${row.avgResMin > 2400 ? "text-red-500" : row.avgResMin > 1440 ? "text-amber-600" : "text-emerald-600"}`}>
+                      {avgFmt}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+            {rows.length === 0 && (
+              <tr><td colSpan={4} className="px-5 py-10 text-center text-slate-400">Filtreyle eşleşen ticket bulunamadı</td></tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Ana bileşen ────────────────────────────────────────────── */
 export default function DestekIslemleriPage({ activeSubId }: { activeSubId: string }) {
-  const tab: TabKey = activeSubId === "agent-raporu" ? "agent" : activeSubId === "sla-raporu" ? "sla" : "ham";
+  const tab: TabKey = activeSubId === "agent-raporu" ? "agent" : activeSubId === "sla-raporu" ? "sla" : activeSubId === "kategori-raporu" ? "kategori" : "ham";
 
   /* Filtreler */
   const [ticketIdFilter, setTicketIdFilter]         = useState("");
@@ -661,11 +844,14 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
   const [selectedAgents, setSelectedAgents]         = useState<string[]>([]);
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
 
+  const [selectedKategoriBirim, setSelectedKategoriBirim] = useState<string[]>([]);
+
   const [appliedFilters, setAppliedFilters] = useState<{
     ticketId: string; startDate: string; endDate: string;
     statuses: Status[]; groups: Group[];
     agents: string[]; categories: string[];
-  }>({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [], agents: [], categories: [] });
+    kategoriBirim: string[];
+  }>({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [], agents: [], categories: [], kategoriBirim: [] });
 
   const toggleStatus   = (s: Status)  => setSelectedStatuses(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev, s]);
   const toggleGroup    = (g: Group)   => setSelectedGroups(prev => prev.includes(g) ? prev.filter(x=>x!==g) : [...prev, g]);
@@ -673,12 +859,13 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
   const toggleCategory = (c: string)  => setSelectedCategories(prev => prev.includes(c) ? prev.filter(x=>x!==c) : [...prev, c]);
 
   const applyFilters = () =>
-    setAppliedFilters({ ticketId: ticketIdFilter, startDate, endDate, statuses: selectedStatuses, groups: selectedGroups, agents: selectedAgents, categories: selectedCategories });
+    setAppliedFilters({ ticketId: ticketIdFilter, startDate, endDate, statuses: selectedStatuses, groups: selectedGroups, agents: selectedAgents, categories: selectedCategories, kategoriBirim: selectedKategoriBirim });
 
   const resetFilters = () => {
     setTicketIdFilter(""); setStartDate("2026-04-01"); setEndDate("2026-04-08");
     setSelectedStatuses([]); setSelectedGroups([]); setSelectedAgents([]); setSelectedCategories([]);
-    setAppliedFilters({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [], agents: [], categories: [] });
+    setSelectedKategoriBirim([]);
+    setAppliedFilters({ ticketId: "", startDate: "2026-04-01", endDate: "2026-04-08", statuses: [], groups: [], agents: [], categories: [], kategoriBirim: [] });
   };
 
   const allAgents     = useMemo(() => [...new Set(ALL_TICKETS.map(t => t.agent).filter(a => a !== "-"))].sort(), []);
@@ -737,7 +924,7 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
           </div>
 
           {/* Durum — ham ve sla'da */}
-          {tab !== "agent" && (
+          {tab !== "agent" && tab !== "kategori" && (
             <div className="flex flex-col gap-1">
               <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Durum</label>
               <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[180px] flex-wrap">
@@ -789,7 +976,7 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
           )}
 
           {/* Kategori — agent ve sla raporunda */}
-          {(tab === "agent" || tab === "sla") && (
+          {(tab === "agent" || tab === "sla" || tab === "kategori") && (
             <CheckboxDropdown
               label="Kategori"
               options={allCategories}
@@ -800,28 +987,36 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
           )}
 
           {/* Birim — tüm tablarda */}
-          <div className="flex flex-col gap-1">
-            <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Birim</label>
-            <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[200px] flex-wrap">
-              {selectedGroups.map(g => (
-                <span key={g} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap">
-                  {g}
-                  <button onClick={()=>toggleGroup(g)}><X className="w-2.5 h-2.5" /></button>
-                </span>
-              ))}
-              <div className="relative group">
-                <button className="text-[10px] text-slate-400 hover:text-slate-600">+ ekle</button>
-                <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20 min-w-[180px] hidden group-hover:block">
-                  {GROUPS.map(g => (
-                    <button key={g} onClick={()=>toggleGroup(g)}
-                      className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 whitespace-nowrap ${selectedGroups.includes(g)?"font-semibold text-indigo-600":""}`}>
-                      {g}
-                    </button>
-                  ))}
+          {tab === "kategori" ? (
+            <BirimDropdown
+              selected={selectedKategoriBirim}
+              onToggle={n => setSelectedKategoriBirim(prev => prev.includes(n) ? prev.filter(x => x !== n) : [...prev, n])}
+              onClear={() => setSelectedKategoriBirim([])}
+            />
+          ) : (
+            <div className="flex flex-col gap-1">
+              <label className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Birim</label>
+              <div className="flex items-center gap-1 px-3 py-1.5 border border-slate-200 rounded-lg bg-slate-50 min-w-[200px] flex-wrap">
+                {selectedGroups.map(g => (
+                  <span key={g} className="inline-flex items-center gap-1 bg-indigo-100 text-indigo-700 text-[10px] font-medium px-1.5 py-0.5 rounded whitespace-nowrap">
+                    {g}
+                    <button onClick={()=>toggleGroup(g)}><X className="w-2.5 h-2.5" /></button>
+                  </span>
+                ))}
+                <div className="relative group">
+                  <button className="text-[10px] text-slate-400 hover:text-slate-600">+ ekle</button>
+                  <div className="absolute left-0 top-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg py-1 z-20 min-w-[180px] hidden group-hover:block">
+                    {GROUPS.map(g => (
+                      <button key={g} onClick={()=>toggleGroup(g)}
+                        className={`w-full text-left px-3 py-1.5 text-xs hover:bg-slate-50 whitespace-nowrap ${selectedGroups.includes(g)?"font-semibold text-indigo-600":""}`}>
+                        {g}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
 
           <button onClick={applyFilters}
             className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold px-4 py-1.5 rounded-lg transition-colors">
@@ -835,9 +1030,10 @@ export default function DestekIslemleriPage({ activeSubId }: { activeSubId: stri
 
       {/* İçerik */}
       <div className="flex-1 overflow-hidden flex flex-col">
-        {tab === "ham"   && <HamRapor   tickets={filteredTickets} onExport={()=>exportCSV(filteredTickets,"ham")}   />}
-        {tab === "agent" && <AgentRaporu tickets={filteredTickets} onExport={()=>exportCSV(filteredTickets,"agent")} />}
-        {tab === "sla"   && <SlaRaporu   tickets={filteredTickets} onExport={()=>exportCSV(filteredTickets,"sla")}   />}
+        {tab === "ham"      && <HamRapor      tickets={filteredTickets} onExport={()=>exportCSV(filteredTickets,"ham")}      />}
+        {tab === "agent"    && <AgentRaporu   tickets={filteredTickets} onExport={()=>exportCSV(filteredTickets,"agent")}    />}
+        {tab === "sla"      && <SlaRaporu     tickets={filteredTickets} onExport={()=>exportCSV(filteredTickets,"sla")}      />}
+        {tab === "kategori" && <KategoriRaporu tickets={filteredTickets} birimFilter={appliedFilters.kategoriBirim} onExport={()=>exportCSV(filteredTickets,"kategori")} />}
       </div>
     </div>
   );
