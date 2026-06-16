@@ -13,7 +13,7 @@ interface NavItem {
 const navItemsByModule: Record<string, NavItem[]> = {
   "aday-uye": [
     { icon: Home, label: "Anasayfa", id: "home" },
-    { icon: BarChart2, label: "İstatistikler", id: "istatistikler" },
+    { icon: BarChart2, label: "Satış Merkezi", id: "satis-merkezi" },
     {
       icon: Users,
       label: "Aday Üye",
@@ -102,7 +102,7 @@ export default function Sidebar({ activeModuleId, collapsed, onCollapse, onNavIt
                   onClick={() => {
                     if (!collapsed && children) {
                       toggleExpand(id);
-                    } else if (!children && id !== "home") {
+                    } else if (!children) {
                       onNavItemClick?.(id);
                     }
                   }}
@@ -134,7 +134,7 @@ export default function Sidebar({ activeModuleId, collapsed, onCollapse, onNavIt
                     return (
                       <button
                         key={child.id}
-                        onClick={() => setActiveSubId(child.id)}
+                        onClick={() => { setActiveSubId(child.id); onNavItemClick?.(child.id); }}
                         className={`w-full flex items-center pl-10 pr-4 py-2 text-xs rounded-md transition-colors whitespace-nowrap mb-0.5 ${
                           isChildActive
                             ? "bg-[#80111b] text-white font-bold"
@@ -162,7 +162,7 @@ export default function Sidebar({ activeModuleId, collapsed, onCollapse, onNavIt
                       return (
                         <button
                           key={child.id}
-                          onClick={() => setActiveSubId(child.id)}
+                          onClick={() => { setActiveSubId(child.id); onNavItemClick?.(child.id); }}
                           className={`flex items-center px-4 py-2.5 text-xs rounded-lg transition-colors whitespace-nowrap ${
                             isChildActive
                               ? "bg-[#80111b] text-white font-bold mx-2"

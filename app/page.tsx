@@ -10,6 +10,7 @@ import KampanyaIslemleriPage from "@/components/pages/KampanyaIslemleriPage";
 import TahsilatIslemleriPage from "@/components/pages/TahsilatIslemleriPage";
 import KulupIslemleriPage from "@/components/pages/KulupIslemleriPage";
 import AktiviteIslemleriPage from "@/components/pages/AktiviteIslemleriPage";
+import SatisMerkeziPage from "@/components/pages/SatisMerkeziPage";
 
 interface Tab { id: string; title: string; icon: React.ElementType; }
 
@@ -63,6 +64,7 @@ export default function Page() {
   const [activeView, setActiveView] = useState<string>("home");
   const [sidebarCollapsed, setSidebarCollapsed] = useState(true);
   const [kulupSubPage, setKulupSubPage] = useState("aktivite-takvimi");
+  const [adayUyeSubPage, setAdayUyeSubPage] = useState("aday-uye-listesi");
   const [clubMenuOpen, setClubMenuOpen] = useState(false);
 
   // Drag state — use refs to avoid stale closures in pointer handlers
@@ -385,13 +387,25 @@ export default function Page() {
               activeModuleId={activeView}
               collapsed={sidebarCollapsed}
               onCollapse={setSidebarCollapsed}
-              onNavItemClick={(id) => { if (activeView === "kulup-islemleri") setKulupSubPage(id); }}
-              activeNavItemId={activeView === "kulup-islemleri" ? kulupSubPage : undefined}
+              onNavItemClick={(id) => {
+                if (id === "home") { setActiveView("home"); return; }
+                if (activeView === "kulup-islemleri") setKulupSubPage(id);
+                if (activeView === "aday-uye") setAdayUyeSubPage(id);
+              }}
+              activeNavItemId={
+                activeView === "kulup-islemleri" ? kulupSubPage :
+                activeView === "aday-uye" && adayUyeSubPage === "satis-merkezi" ? "satis-merkezi" :
+                undefined
+              }
             />
             <div className="flex-1 overflow-hidden relative">
               {tabs.map(tab => (
                 <div key={tab.id} className={`absolute inset-0 ${activeView === tab.id ? "flex" : "hidden"}`}>
-                  {tab.id === "aday-uye"            && <AdayUyePage />}
+                  {tab.id === "aday-uye"            && (
+                    adayUyeSubPage === "satis-merkezi" ? <SatisMerkeziPage /> :
+                    adayUyeSubPage === "aday-uye-listesi" ? <AdayUyePage /> :
+                    <div className="flex-1 bg-[#f5f8fa]" />
+                  )}
                   {tab.id === "uyelik-islemleri"   && <UyelikIslemleriPage />}
                   {tab.id === "kampanya-islemleri" && <KampanyaIslemleriPage />}
                   {tab.id === "tahsilat-islemleri" && <TahsilatIslemleriPage />}

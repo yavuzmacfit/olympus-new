@@ -12,6 +12,7 @@ import {
 /* ─── Column definitions ─────────────────────────────────────────── */
 const COLUMNS = [
   { id: "id",              label: "ID",                  fixed: true  },
+  { id: "oncelikSkoru",    label: "Öncelik Skoru",       fixed: false },
   { id: "ad",              label: "Ad",                  fixed: true  },
   { id: "soyad",           label: "Soyad",               fixed: true  },
   { id: "telefon",         label: "Telefon",             fixed: true  },
@@ -33,7 +34,7 @@ const COLUMNS = [
 type ColId = typeof COLUMNS[number]["id"];
 
 const DEFAULT_VISIBLE = new Set<ColId>([
-  "id", "ad", "soyad", "telefon",
+  "id", "oncelikSkoru", "ad", "soyad", "telefon",
   "eposta", "satisTemsilcisi", "olusturmaTarihi",
   "kaynak", "kaynakDetay", "statu", "gorevTarihi",
   "iletisimIzni", "smsOnay",
@@ -42,6 +43,7 @@ const DEFAULT_VISIBLE = new Set<ColId>([
 /* ─── Mock data ──────────────────────────────────────────────────── */
 interface Lead {
   id: number; initials: string; color: string;
+  oncelikSkoru: number;
   ad: string; soyad: string; telefon: string; eposta: string;
   kulupad: string; satisTemsilcisi: string; olusturmaTarihi: string;
   kaynak: string; kaynakDetay: string; statu: string; gorevTarihi: string;
@@ -50,31 +52,31 @@ interface Lead {
 }
 
 const leads: Lead[] = [
-  { id: 1, initials: "AK", color: "bg-red-800",
+  { id: 1, initials: "AK", color: "bg-red-800", oncelikSkoru: 9,
     ad: "Ahmet", soyad: "Kaya", telefon: "0532 111 22 33", eposta: "ahmet.kaya@gmail.com",
     kulupad: "Ortaköy", satisTemsilcisi: "Yavuz K.", olusturmaTarihi: "27.03.2026",
     kaynak: "Instagram", kaynakDetay: "Reels Kampanyası", statu: "Yeni Lead",
     gorevTarihi: "28.03.2026", ayrUyelikTipi: "Bireysel", ayrUyelikSuresi: "12 Ay",
     isBankasiKKTipi: "Axess", iletisimIzni: "Evet", smsOnay: "Evet" },
-  { id: 2, initials: "FD", color: "bg-blue-700",
+  { id: 2, initials: "FD", color: "bg-blue-700", oncelikSkoru: 6,
     ad: "Fatma", soyad: "Demir", telefon: "0544 222 33 44", eposta: "fatma.demir@hotmail.com",
     kulupad: "Mars Athletic", satisTemsilcisi: "Yavuz K.", olusturmaTarihi: "27.03.2026",
     kaynak: "Web Sitesi", kaynakDetay: "Üyelik Formu", statu: "Arandı",
     gorevTarihi: "29.03.2026", ayrUyelikTipi: "Aile", ayrUyelikSuresi: "6 Ay",
     isBankasiKKTipi: "—", iletisimIzni: "Evet", smsOnay: "Hayır" },
-  { id: 3, initials: "MC", color: "bg-emerald-700",
+  { id: 3, initials: "MC", color: "bg-emerald-700", oncelikSkoru: 4,
     ad: "Murat", soyad: "Çelik", telefon: "0555 333 44 55", eposta: "murat.celik@yandex.com",
     kulupad: "Mars Athletic", satisTemsilcisi: "Yiğit S.", olusturmaTarihi: "26.03.2026",
     kaynak: "Referans", kaynakDetay: "Üye Referansı", statu: "Takip",
     gorevTarihi: "31.03.2026", ayrUyelikTipi: "Bireysel", ayrUyelikSuresi: "—",
     isBankasiKKTipi: "Bonus", iletisimIzni: "Hayır", smsOnay: "Hayır" },
-  { id: 4, initials: "ZY", color: "bg-purple-700",
+  { id: 4, initials: "ZY", color: "bg-purple-700", oncelikSkoru: 10,
     ad: "Zeynep", soyad: "Yılmaz", telefon: "0506 444 55 66", eposta: "zeynep.y@gmail.com",
     kulupad: "Mars Athletic", satisTemsilcisi: "Yiğit S.", olusturmaTarihi: "25.03.2026",
     kaynak: "TikTok", kaynakDetay: "Story Linki", statu: "Sıcak Lead",
     gorevTarihi: "28.03.2026", ayrUyelikTipi: "—", ayrUyelikSuresi: "—",
     isBankasiKKTipi: "—", iletisimIzni: "Evet", smsOnay: "Evet" },
-  { id: 5, initials: "EO", color: "bg-orange-700",
+  { id: 5, initials: "EO", color: "bg-orange-700", oncelikSkoru: 3,
     ad: "Emre", soyad: "Özkan", telefon: "0533 555 66 77", eposta: "emre.ozkan@icloud.com",
     kulupad: "Mars Athletic", satisTemsilcisi: "Yavuz K.", olusturmaTarihi: "24.03.2026",
     kaynak: "Google", kaynakDetay: "Arama Reklamı", statu: "Ulaşılamadı",
@@ -89,6 +91,20 @@ const STATU_COLORS: Record<string, string> = {
   "Takip":       "bg-purple-100 text-purple-700",
   "Ulaşılamadı": "bg-slate-100 text-slate-500",
 };
+
+function oncelikSkoruColor(skor: number): string {
+  if (skor >= 9) return "bg-red-100 text-red-700";
+  if (skor >= 7) return "bg-orange-100 text-orange-700";
+  if (skor >= 4) return "bg-yellow-100 text-yellow-700";
+  return "bg-green-100 text-green-700";
+}
+
+function oncelikSkoruLabel(skor: number): string {
+  if (skor >= 9) return "Kritik";
+  if (skor >= 7) return "Yüksek";
+  if (skor >= 4) return "Orta";
+  return "Düşük";
+}
 
 function getCellValue(lead: Lead, colId: ColId): string {
   return String((lead as unknown as Record<string, unknown>)[colId] ?? "—");
@@ -245,6 +261,10 @@ export default function AdayUyePage() {
   const [showMoreTabs, setShowMoreTabs]         = useState(false);
   const [showYogaSchedule, setShowYogaSchedule]   = useState(false);
   const [showAllWorkouts, setShowAllWorkouts]     = useState(false);
+  const [showAllMemberships, setShowAllMemberships] = useState(false);
+  const [membershipCollapsed, setMembershipCollapsed] = useState(false);
+  const [leadOzetiCollapsed, setLeadOzetiCollapsed] = useState(false);
+  const [workoutCollapsed, setWorkoutCollapsed] = useState(false);
   const moreTabsTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const handleMoreEnter = () => {
@@ -315,6 +335,7 @@ export default function AdayUyePage() {
       ayrUyelikTipi: "—", ayrUyelikSuresi: "—",
       isBankasiKKTipi: "—",
       iletisimIzni: "—", smsOnay: "—",
+      oncelikSkoru: 5,
     };
     leads.push(newLead);
     setShowOtpModal(false);
@@ -695,6 +716,11 @@ export default function AdayUyePage() {
                               <div className="flex items-center gap-2">
                                 <div className={`w-6 h-6 ${lead.color} rounded-full flex items-center justify-center text-white text-[10px] font-bold shrink-0`}>{lead.initials}</div>
                                 <span className="text-blue-600 font-medium">{lead.ad}</span>
+                              </div>
+                            ) : col.id === "oncelikSkoru" ? (
+                              <div className="flex items-center gap-1">
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${oncelikSkoruColor(lead.oncelikSkoru)}`}>{lead.oncelikSkoru}</span>
+                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${oncelikSkoruColor(lead.oncelikSkoru)}`}>{oncelikSkoruLabel(lead.oncelikSkoru)}</span>
                               </div>
                             ) : col.id === "statu" ? (
                               <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[lead.statu] ?? "bg-slate-100 text-slate-500"}`}>{lead.statu}</span>
@@ -1337,36 +1363,134 @@ export default function AdayUyePage() {
 
                       {/* ── Lead Özeti — Breeze style ── */}
                       <div className="border border-slate-200 rounded-xl overflow-hidden">
-                        <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
-                          <div className="flex items-center gap-1.5">
-                            <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                        <div className={`flex items-center justify-between px-3 py-2 ${!leadOzetiCollapsed ? "border-b border-slate-100" : ""}`}>
+                          <button
+                            onClick={() => setLeadOzetiCollapsed(v => !v)}
+                            className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+                          >
+                            <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${leadOzetiCollapsed ? "-rotate-90" : ""}`} />
                             <span className="text-xs font-semibold text-slate-700">Lead Özeti</span>
-                          </div>
+                          </button>
                           <button className="text-[10px] text-blue-500 font-bold border border-blue-200 rounded px-1.5 py-0.5 hover:bg-blue-50 transition-colors">
                             + AI
                           </button>
                         </div>
-                        <div className="px-3 py-3">
-                          <div className="border-l-2 border-blue-400 pl-3">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
-                                {selectedLead.olusturmaTarihi}
-                              </span>
-                              <button className="text-slate-300 hover:text-slate-500 transition-colors">
-                                <RefreshCw className="w-3 h-3" />
+                        {!leadOzetiCollapsed && (
+                          <div className="px-3 py-3">
+                            <div className="border-l-2 border-blue-400 pl-3">
+                              <div className="flex items-center justify-between mb-2">
+                                <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
+                                  {selectedLead.olusturmaTarihi}
+                                </span>
+                                <button className="text-slate-300 hover:text-slate-500 transition-colors">
+                                  <RefreshCw className="w-3 h-3" />
+                                </button>
+                              </div>
+                              <p className="text-xs text-slate-600 leading-relaxed">
+                                {selectedLead.ad} {selectedLead.soyad},{" "}
+                                <span className="font-medium">{selectedLead.kaynak}</span>
+                                {selectedLead.kaynakDetay !== "—" ? ` (${selectedLead.kaynakDetay})` : ""} üzerinden sisteme girdi.{" "}
+                                Statüsü <span className="font-medium">{selectedLead.statu}</span> olarak güncellendi.
+                                {selectedLead.satisTemsilcisi !== "—" && ` Satış temsilcisi ${selectedLead.satisTemsilcisi} tarafından takip ediliyor.`}
+                                {selectedLead.gorevTarihi !== "—" && ` Görev tarihi: ${selectedLead.gorevTarihi}.`}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* ── Üyelik Geçmişi ── */}
+                      {(() => {
+                        const UYELIK_COLORS: Record<string, { border: string; label: string; badge: string }> = {
+                          "Classic":   { border: "#94a3b8", label: "text-slate-600",  badge: "bg-slate-100 text-slate-600"  },
+                          "Gold":      { border: "#f59e0b", label: "text-amber-600",  badge: "bg-amber-100 text-amber-700"  },
+                          "Platinum":  { border: "#6366f1", label: "text-indigo-600", badge: "bg-indigo-100 text-indigo-700" },
+                          "Diamond":   { border: "#a855f7", label: "text-purple-600", badge: "bg-purple-100 text-purple-700" },
+                        };
+                        type UyelikMadde = { text: string; alt?: string[] };
+                        const uyelikler: { tip: string; baslangic: string; bitis: string; maddeler: UyelikMadde[] }[] = [
+                          {
+                            tip: "Gold", baslangic: "Mart 2024", bitis: "Mart 2025",
+                            maddeler: [
+                              { text: "1 yıllık Gold üyelik" },
+                              { text: "23 gün kulüp girişi" },
+                              { text: "Kulüpte ortalama 2 saat geçirdi" },
+                              { text: "34 grup dersi katılımı", alt: ["10 cycle dersi katılımı", "5 yoga dersi katılımı", "4 pilates dersi katılımı"] },
+                            ],
+                          },
+                          { tip: "Classic", baslangic: "Eylül 2023", bitis: "Mart 2024", maddeler: [{ text: "6 aylık Classic üyelik" }, { text: "Temel ekipman kullanımı ve soyunma odası erişimi" }] },
+                        ];
+                        const MAX_VIS = 3;
+                        const gorunenler = showAllMemberships ? uyelikler : uyelikler.slice(0, 1);
+                        const kalanSayi = uyelikler.length - 1;
+                        return (
+                          <div className="border border-slate-200 rounded-xl overflow-hidden">
+                            <div className={`flex items-center justify-between px-3 py-2 ${!membershipCollapsed ? "border-b border-slate-100" : ""}`}>
+                              <button
+                                onClick={() => setMembershipCollapsed(v => !v)}
+                                className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+                              >
+                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${membershipCollapsed ? "-rotate-90" : ""}`} />
+                                <span className="text-xs font-semibold text-slate-700">Üyelik Geçmişi</span>
+                              </button>
+                              <button className="text-[10px] text-violet-500 font-bold border border-violet-200 rounded px-1.5 py-0.5 hover:bg-violet-50 transition-colors">
+                                + AI
                               </button>
                             </div>
-                            <p className="text-xs text-slate-600 leading-relaxed">
-                              {selectedLead.ad} {selectedLead.soyad},{" "}
-                              <span className="font-medium">{selectedLead.kaynak}</span>
-                              {selectedLead.kaynakDetay !== "—" ? ` (${selectedLead.kaynakDetay})` : ""} üzerinden sisteme girdi.{" "}
-                              Statüsü <span className="font-medium">{selectedLead.statu}</span> olarak güncellendi.
-                              {selectedLead.satisTemsilcisi !== "—" && ` Satış temsilcisi ${selectedLead.satisTemsilcisi} tarafından takip ediliyor.`}
-                              {selectedLead.gorevTarihi !== "—" && ` Görev tarihi: ${selectedLead.gorevTarihi}.`}
-                            </p>
+
+                            {!membershipCollapsed && (
+                              <>
+                                <div
+                                  className="divide-y divide-slate-50"
+                                  style={showAllMemberships ? { maxHeight: `${MAX_VIS * 120}px`, overflowY: "auto" } : undefined}
+                                >
+                                  {gorunenler.map((u, i) => {
+                                    const c = UYELIK_COLORS[u.tip] ?? UYELIK_COLORS["Classic"];
+                                    return (
+                                      <div key={i} className="px-3 py-3">
+                                        <div className="border-l-2 pl-3" style={{ borderLeftColor: c.border }}>
+                                          <div className="flex items-center justify-between mb-1.5">
+                                            <span className={`text-[10px] font-bold uppercase tracking-wider ${c.label}`}>{u.tip}</span>
+                                            <span className="text-[10px] text-slate-400 font-medium">{u.baslangic} – {u.bitis}</span>
+                                          </div>
+                                          <ul className="mt-0.5 space-y-0.5">
+                                            {u.maddeler.map((m, mi) => (
+                                              <li key={mi}>
+                                                <div className="flex items-start gap-1.5 text-xs text-slate-600">
+                                                  <span className="mt-1.5 w-1 h-1 rounded-full shrink-0" style={{ backgroundColor: c.border }} />
+                                                  {m.text}
+                                                </div>
+                                                {m.alt && (
+                                                  <ul className="mt-0.5 ml-3 space-y-0.5">
+                                                    {m.alt.map((a, ai) => (
+                                                      <li key={ai} className="flex items-start gap-1.5 text-xs text-slate-500">
+                                                        <span className="mt-1.5 w-1 h-1 rounded-full shrink-0 bg-slate-400" />
+                                                        {a}
+                                                      </li>
+                                                    ))}
+                                                  </ul>
+                                                )}
+                                              </li>
+                                            ))}
+                                          </ul>
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                                <div className="flex justify-end px-3 py-2 border-t border-slate-100">
+                                  <button
+                                    onClick={() => setShowAllMemberships(v => !v)}
+                                    className="text-[10px] text-slate-500 hover:text-slate-700 font-medium transition-colors"
+                                  >
+                                    {showAllMemberships ? "Gizle" : `Diğer üyelikler (${kalanSayi})`}
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
-                        </div>
-                      </div>
+                        );
+                      })()}
 
                       {/* ── Antrenman Geçmişi ── */}
                       {(() => {
@@ -1381,75 +1505,80 @@ export default function AdayUyePage() {
                         const kalanSayi  = antrenmanlar.length - 1;
                         return (
                           <div className="border border-slate-200 rounded-xl overflow-hidden">
-                            <div className="flex items-center justify-between px-3 py-2 border-b border-slate-100">
-                              <div className="flex items-center gap-1.5">
-                                <ChevronDown className="w-3.5 h-3.5 text-slate-400" />
+                            <div className={`flex items-center justify-between px-3 py-2 ${!workoutCollapsed ? "border-b border-slate-100" : ""}`}>
+                              <button
+                                onClick={() => setWorkoutCollapsed(v => !v)}
+                                className="flex items-center gap-1.5 hover:opacity-70 transition-opacity"
+                              >
+                                <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${workoutCollapsed ? "-rotate-90" : ""}`} />
                                 <span className="text-xs font-semibold text-slate-700">Antrenman Geçmişi</span>
-                              </div>
+                              </button>
                               <button className="text-[10px] text-emerald-500 font-bold border border-emerald-200 rounded px-1.5 py-0.5 hover:bg-emerald-50 transition-colors">
                                 + AI
                               </button>
                             </div>
 
                             {/* Antrenman girişleri */}
-                            <div
-                              className="divide-y divide-slate-50"
-                              style={showAllWorkouts ? { maxHeight: `${MAX_VISIBLE * 120}px`, overflowY: "auto" } : undefined}
-                            >
-                              {gorunenler.map((a, i) => (
-                                <div key={i} className="px-3 py-3">
-                                  <div className="border-l-2 border-emerald-400 pl-3">
-                                    <div className="flex items-center justify-between mb-1.5">
-                                      <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{a.zaman}</span>
-                                      <span className="text-[10px] text-slate-400 font-medium">{a.tur} · {a.sure}</span>
-                                    </div>
-                                    <p className="text-xs text-slate-600 leading-relaxed">
-                                      {a.hint.split("2 yoga dersi").length > 1 ? (
-                                        <>
-                                          {a.hint.split("2 yoga dersi")[0]}
-                                          <button onClick={() => setShowYogaSchedule(v => !v)}
-                                            className="font-medium text-emerald-600 underline decoration-dashed underline-offset-2">
-                                            2 yoga dersi
-                                          </button>
-                                          {a.hint.split("2 yoga dersi")[1]}
-                                        </>
-                                      ) : a.hint}
-                                    </p>
-                                    {a.yogaExpand && showYogaSchedule && (
-                                      <div className="mt-2 border border-emerald-100 rounded-lg overflow-hidden">
-                                        <div className="bg-emerald-50 px-3 py-1.5 border-b border-emerald-100">
-                                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Yaklaşan Yoga Dersleri</span>
+                            {!workoutCollapsed && (
+                              <>
+                                <div
+                                  className="divide-y divide-slate-50"
+                                  style={showAllWorkouts ? { maxHeight: `${MAX_VISIBLE * 120}px`, overflowY: "auto" } : undefined}
+                                >
+                                  {gorunenler.map((a, i) => (
+                                    <div key={i} className="px-3 py-3">
+                                      <div className="border-l-2 border-emerald-400 pl-3">
+                                        <div className="flex items-center justify-between mb-1.5">
+                                          <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">{a.zaman}</span>
+                                          <span className="text-[10px] text-slate-400 font-medium">{a.tur} · {a.sure}</span>
                                         </div>
-                                        {[
-                                          { tarih: "15 Nisan", tur: "Vinyasa",    egitmen: "Türkan Paşalıoğlu", seviye: "Başlangıç"  },
-                                          { tarih: "18 Nisan", tur: "Hatha Yoga", egitmen: "Mert Aydın",        seviye: "Orta Seviye" },
-                                        ].map((ders, di, arr) => (
-                                          <div key={di} className={`flex items-center justify-between px-3 py-2 ${di < arr.length - 1 ? "border-b border-emerald-50" : ""}`}>
-                                            <div>
-                                              <p className="text-xs font-semibold text-slate-700">{ders.tarih} · {ders.tur}</p>
-                                              <p className="text-[10px] text-slate-400">{ders.egitmen}</p>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                          {a.hint.split("2 yoga dersi").length > 1 ? (
+                                            <>
+                                              {a.hint.split("2 yoga dersi")[0]}
+                                              <button onClick={() => setShowYogaSchedule(v => !v)}
+                                                className="font-medium text-emerald-600 underline decoration-dashed underline-offset-2">
+                                                2 yoga dersi
+                                              </button>
+                                              {a.hint.split("2 yoga dersi")[1]}
+                                            </>
+                                          ) : a.hint}
+                                        </p>
+                                        {a.yogaExpand && showYogaSchedule && (
+                                          <div className="mt-2 border border-emerald-100 rounded-lg overflow-hidden">
+                                            <div className="bg-emerald-50 px-3 py-1.5 border-b border-emerald-100">
+                                              <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-wider">Yaklaşan Yoga Dersleri</span>
                                             </div>
-                                            <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5 shrink-0">
-                                              {ders.seviye}
-                                            </span>
+                                            {[
+                                              { tarih: "15 Nisan", tur: "Vinyasa",    egitmen: "Türkan Paşalıoğlu", seviye: "Başlangıç"  },
+                                              { tarih: "18 Nisan", tur: "Hatha Yoga", egitmen: "Mert Aydın",        seviye: "Orta Seviye" },
+                                            ].map((ders, di, arr) => (
+                                              <div key={di} className={`flex items-center justify-between px-3 py-2 ${di < arr.length - 1 ? "border-b border-emerald-50" : ""}`}>
+                                                <div>
+                                                  <p className="text-xs font-semibold text-slate-700">{ders.tarih} · {ders.tur}</p>
+                                                  <p className="text-[10px] text-slate-400">{ders.egitmen}</p>
+                                                </div>
+                                                <span className="text-[10px] text-emerald-600 font-medium bg-emerald-50 border border-emerald-100 rounded-full px-2 py-0.5 shrink-0">
+                                                  {ders.seviye}
+                                                </span>
+                                              </div>
+                                            ))}
                                           </div>
-                                        ))}
+                                        )}
                                       </div>
-                                    )}
-                                  </div>
+                                    </div>
+                                  ))}
                                 </div>
-                              ))}
-                            </div>
-
-                            {/* Diğer antrenmanlar */}
-                            <div className="flex justify-end px-3 py-2 border-t border-slate-100">
-                              <button
-                                onClick={() => setShowAllWorkouts(v => !v)}
-                                className="text-[10px] text-slate-500 hover:text-slate-700 font-medium transition-colors"
-                              >
-                                {showAllWorkouts ? "Gizle" : `Diğer antrenmanlar (${kalanSayi})`}
-                              </button>
-                            </div>
+                                <div className="flex justify-end px-3 py-2 border-t border-slate-100">
+                                  <button
+                                    onClick={() => setShowAllWorkouts(v => !v)}
+                                    className="text-[10px] text-slate-500 hover:text-slate-700 font-medium transition-colors"
+                                  >
+                                    {showAllWorkouts ? "Gizle" : `Diğer antrenmanlar (${kalanSayi})`}
+                                  </button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         );
                       })()}
@@ -1465,7 +1594,12 @@ export default function AdayUyePage() {
                           {tableCols.map(col => (
                             <div key={col.id} className="flex flex-col gap-0.5">
                               <span className="text-[10px] text-slate-400 font-medium">{col.label}</span>
-                              {col.id === "statu" ? (
+                              {col.id === "oncelikSkoru" ? (
+                                <div className="flex items-center gap-1">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${oncelikSkoruColor(selectedLead.oncelikSkoru)}`}>{selectedLead.oncelikSkoru}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${oncelikSkoruColor(selectedLead.oncelikSkoru)}`}>{oncelikSkoruLabel(selectedLead.oncelikSkoru)}</span>
+                                </div>
+                              ) : col.id === "statu" ? (
                                 <span className={`inline-flex w-fit px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
                               ) : col.id === "eposta" ? (
                                 <span className="text-sm text-blue-600 truncate">{getCellValue(selectedLead, col.id)}</span>
@@ -1480,7 +1614,12 @@ export default function AdayUyePage() {
                           {tableCols.map(col => (
                             <div key={col.id} className="flex items-center justify-between gap-3 py-2 border-b border-slate-50">
                               <span className="text-[10px] text-slate-400 font-medium shrink-0">{col.label}</span>
-                              {col.id === "statu" ? (
+                              {col.id === "oncelikSkoru" ? (
+                                <div className="flex items-center gap-1">
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${oncelikSkoruColor(selectedLead.oncelikSkoru)}`}>{selectedLead.oncelikSkoru}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${oncelikSkoruColor(selectedLead.oncelikSkoru)}`}>{oncelikSkoruLabel(selectedLead.oncelikSkoru)}</span>
+                                </div>
+                              ) : col.id === "statu" ? (
                                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${STATU_COLORS[selectedLead.statu] ?? "bg-slate-100 text-slate-500"}`}>{selectedLead.statu}</span>
                               ) : col.id === "eposta" ? (
                                 <span className="text-xs text-blue-600 truncate">{getCellValue(selectedLead, col.id)}</span>
